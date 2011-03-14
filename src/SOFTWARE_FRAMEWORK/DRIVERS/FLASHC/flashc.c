@@ -707,7 +707,7 @@ volatile void *flashc_memset64(volatile void *dst, U64 src, size_t nbytes, Bool 
 
   // Reformat arguments.
   flash_array_end.u8ptr = AVR32_FLASH + flashc_get_flash_size();
-  dest.u8ptr = dst;
+  dest.u8ptr = (U8 *) dst;
   for (i = (Get_align((U32)dest.u8ptr, sizeof(U64)) - 1) & (sizeof(U64) - 1);
        src; i = (i - 1) & (sizeof(U64) - 1))
   {
@@ -881,8 +881,8 @@ volatile void *flashc_memcpy(volatile void *dst, const void *src, size_t nbytes,
 
   // Reformat arguments.
   flash_array_end.u8ptr = AVR32_FLASH + flashc_get_flash_size();
-  dest.u8ptr = dst;
-  source.u8ptr = src;
+  dest.u8ptr = (U8 *) dst;
+  source.u8ptr =(U8 *) src;
   dest_end.u8ptr = dest.u8ptr + nbytes;
 
   // If destination is outside flash, go to next flash page if any.

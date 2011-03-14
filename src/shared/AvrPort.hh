@@ -29,11 +29,11 @@
 
 class Pin {
 private:
-
-	uint8_t pin_index : 4;
+        static bool gpio_module_initialized ;
+	int pin_index : 4;
 public:
-	Pin() : pin_index(-1) {}
-	Pin( uint8_t pin_index_in) : pin_index(pin_index_in) {}
+	Pin() : pin_index(-1) {initialize();}
+	Pin( int pin_index_in) : pin_index(pin_index_in) {initialize();}
 	bool isNull() { return (pin_index==-1); }
 	void setDirection(bool out) {
 		if (out==true)
@@ -48,8 +48,12 @@ public:
 		else
 			gpio_local_clr_gpio_pin(pin_index);
 	}
-	const U16 getPinIndex() const { return pin_index; }
+	const int getPinIndex() const { return pin_index; }
+	void initialize() {
+	  if (!gpio_module_initialized) {gpio_local_init(); gpio_module_initialized=true; }
+	}
 };
+
 
 #endif // SHARED_AVR_PORT_HH_
 

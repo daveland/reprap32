@@ -19,26 +19,65 @@
 /* This remains GPLV3  Enjoy !!!*/
 
 #include <stdint.h>
-//#include <avr/interrupt.h>
-//#include <avr/io.h>
-//#include <util/atomic.h>
 #include "Motherboard.hh"
 #include "Configuration.hh"
 #include "../../Steppers.hh"
 #include "../../Command.hh"
 //#include "LiquidCrystal.hh"
 
-// AVR32 software Framework includes
 
+// AVR32 software Framework includes
 #include "intc.h"
 #include "pm.h"
-
-
-// Timer #1 interrupt settings
-
+#include "flashc.h"
 
 
 
+// Osc1 crystal is not mounted by default. Set the following definitions to the
+// appropriate values if a custom Osc1 crystal is mounted on your board.
+#define FOSC1           14318181                              //!< Osc1 frequency: Hz.
+#define OSC1_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
+
+
+// set CPU and peripheral clocks to desired values.
+// this depends of Crystal frequency
+void Motherboard::setClocks() {
+
+    fstate=flashc_get_wait_state();
+    fstate=1;
+    flashc_set_wait_state(fstate);
+    fstate=26;
+    fstate=flashc_get_wait_state();
+
+
+    pm_enable_osc1_crystal(&AVR32_PM, FOSC1);            // Enable the Osc1 in crystal mode
+
+    pm_enable_clk1(&AVR32_PM, OSC1_STARTUP);                  // Crystal startup time - This parameter is critical and depends on the characteristics of the crystal
+
+     pm_pll_setup(&AVR32_PM,0,7,1,1,16);                      // 7+1 is Mult by 8
+     pm_pll_set_option(&AVR32_PM, 0, // pll.
+                         1,  // pll_freq.
+                         1,  // pll_div2.
+                         0); // pll_wbwdisable.
+     pm_pll_enable(&AVR32_PM, 0);
+
+     pm_wait_for_pll0_locked(&AVR32_PM);
+     pm_cksel(&AVR32_PM,
+                0,   // pbadiv.  //pba=57.272727Mhz
+                0,   // pbasel.
+                0,   // pbbdiv.  //pbb=57.272727Mhz
+                0,   // pbbsel.
+                0,   // hsbdiv. /// cpu and hsb share same settings =57.272727Mhz
+                0);  // hsbsel.
+
+     pm_switch_to_clock(&AVR32_PM, AVR32_PM_MCCTRL_MCSEL_PLL0);  // Then switch main clock to Osc1 and PLL0
+
+
+
+   // Enable the local bus interface for GPIO.
+   gpio_local_init();
+
+}
 
 
 /// Instantiate static motherboard instance
@@ -71,6 +110,9 @@ Motherboard::Motherboard() {
 /// This only resets the board, and does not send a reset
 /// to any attached toolheads.
 void Motherboard::reset() {
+  setClocks();
+  DEBUG_PIN.setDirection(true);
+
 	indicateError(0); // turn off blinker
 	// Init and turn on power supply
 	getPSU().init();

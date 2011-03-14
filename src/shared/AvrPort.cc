@@ -17,5 +17,8 @@
 
 
 #include "AvrPort.hh"
+// initialize class variable to identify the the GPIO module
+// local access has not been enabled.
+bool Pin::gpio_module_initialized=false;
 
 

@@ -15,6 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+/* Reprap32 AVR32 Port  NOT Arduino!!!
+ * Copyright 2011 by David Anderson <davelandia@verizon.net>
+ * Released as GPLV3
+ * Thanks for the inspiration Adam!!!
+ * AVR32 Studio 2.6.0  build 753 for windows was used to compile the
+ * project.  this uses the AVR32studio to manage the build so no makefile
+ * is needed.  This may change in the future if the build system needs to  be
+ * more flexible.
+ *
+ * This code runs on the reprap32 version 1.3 motherboard
+ * This board is AVR32 based on the AT32UC3B0256 running at 60Mhz
+ *
+ * Other versions might need tweeking since hardware will probably
+ * change as devlopment progresses.
+ */
 #include "DebugPacketProcessor.hh"
 #include "Host.hh"
 #include "Tool.hh"

@@ -61,7 +61,7 @@
 class Motherboard {
 private:
 
-
+  unsigned int fstate;
 
 	const static int STEPPERS = STEPPER_COUNT;
 
@@ -113,6 +113,8 @@ public:
 
 	/// Perform the timer interrupt routine.
 	void doInterrupt();
+	// set up pba and pbb clocks
+	void setClocks();
 };
 
 #endif // BOARDS_REPRAP32_V1P0_MOTHERBOARD_HH_
