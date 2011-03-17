@@ -38,6 +38,33 @@
 #define FOSC1           14318181                              //!< Osc1 frequency: Hz.
 #define OSC1_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
 
+// motherboard Tick timer ( determines INTERVAL_IN_MICROSECONDS )
+// this timer overflows once every INTERVAL_IN_MICROSECONDS
+//
+#  define Tick_TC_CHANNEL_ID         1
+
+
+//typedef struct tc_interupt_t tc1_int_settings;
+
+
+
+
+
+
+/// Timercounter  one comparator match interrupt
+/// This interupts every INTERVAL_IN_MICROSECONDS us
+/// TC1 is set to Timer counter interupt mode to
+#if __GNUC__
+__attribute__((__interrupt__))
+#elif __ICCAVR32__
+#pragma handler = AVR32_TC_IRQ_GROUP, 1
+__interrupt
+#endif
+
+
+static void tc1_irq(void) {
+        Motherboard::getBoard().doInterrupt();
+}
 
 // set CPU and peripheral clocks to desired values.
 // this depends of Crystal frequency
@@ -168,24 +195,18 @@ void Motherboard::reset() {
 
 void Motherboard::init_interupts() {
 // Disable all interrupts.
-// Disable_global_interrupt();
-
- // Initialize interrupt vectors.
-// INTC_init_interrupts();
+ Disable_global_interrupt();
 
 
- // Register the USART interrupt handler to the interrupt controller.
- // usart_int_handler is the interrupt handler to register.
- // EXAMPLE_USART_IRQ is the IRQ of the interrupt handler to register.
+
+
+ // Register the Timer1 interrupt handler to the interrupt controller.
+ // __int_handler is the interrupt handler address to register.
+ // EXAMPLE_IRQ is the IRQ of the interrupt handler to register.
  // AVR32_INTC_INT0 is the interrupt priority level to assign to the group of
- // this IRQ.
+ // this IRQ. 0 is the highest 7 is the lowest
  // void INTC_register_interrupt(__int_handler handler, unsigned int irq, unsigned int int_lev);
 
-
- //INTC_register_interrupt(&video_int_handler, EXAMPLE_TC_IRQ, AVR32_INTC_INT0);
-
-// set a channel interrupt handler on left encoder
-// gpio_enable_pin_interrupt(GPIO_CHAN_A_LEFT, GPIO_PIN_CHANGE);
 
  // The INTC driver has to be used only for GNU GCC for AVR32.
 #if __GNUC__
@@ -196,7 +217,7 @@ void Motherboard::init_interupts() {
  //INTC_register_interrupt(&tc2_irq, AVR32_TC_IRQ2, AVR32_INTC_INT0);
 
  // Register the RTC interrupt handler to the interrupt controller.
- //INTC_register_interrupt(&tc1_irq, AVR32_TC_IRQ1, AVR32_INTC_INT0);
+ INTC_register_interrupt(&tc1_irq, AVR32_TC_IRQ1, AVR32_INTC_INT0);
 
 #endif
 
@@ -213,7 +234,7 @@ void Motherboard::init_interupts() {
    Enable_global_interrupt();
 
   //tc_init_waveform(tc, & tc2_settings);
-  //tc_init_waveform(tc, & tc1_settings);
+  tc_init_waveform(tc, & tc1_settings);
 
 
   //
@@ -272,20 +293,7 @@ void Motherboard::doInterrupt() {
 	steppers::doInterrupt();
 }
 
-/// Timercounter  one comparator match interrupt
-/// This interupts every INTERVAL_IN_MICROSECONDS us
-/// TC1 is set to Timer counter interupt mode to
-#if __GNUC__
-__attribute__((__interrupt__))
-#elif __ICCAVR32__
-#pragma handler = AVR32_TC_IRQ_GROUP, 1
-__interrupt
-#endif
 
-
-static void tc1_irq(void) {
-	Motherboard::getBoard().doInterrupt();
-}
 
 /// Number of times to blink the debug LED on each cycle
 volatile uint8_t blink_count = 0;

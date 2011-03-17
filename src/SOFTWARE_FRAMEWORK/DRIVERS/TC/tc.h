@@ -167,7 +167,7 @@
 
 
 //! Timer/counter interrupts.
-typedef struct
+typedef struct test1
 {
   unsigned int                 :24;
 
@@ -195,6 +195,7 @@ typedef struct
   //! Counter overflow interrupt.
   unsigned int covfs           : 1;
 } tc_interrupt_t;
+
 
 //! Parameters when initializing a timer/counter in capture mode.
 typedef struct
