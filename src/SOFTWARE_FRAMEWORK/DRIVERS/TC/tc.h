@@ -167,7 +167,7 @@
 
 
 //! Timer/counter interrupts.
-typedef struct test1
+typedef struct
 {
   unsigned int                 :24;
 

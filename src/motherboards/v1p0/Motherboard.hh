@@ -42,19 +42,10 @@
 #include "PSU.hh"
 #include "Configuration.hh"
 #include  "tc.h"
+#include "intc.h"
 
 
-//const static  tc_interrupt_t  tc1_int_settings = {
-//          etrgs=0,
-//          ldrbs=0,
-//          ldras=0,
-//          cpcs=0,
-//          cpbs=0,
-//          cpas=0,
-//          lovrs=0,
-//          covfs=0
-//
-//  };
+
 
 
 
@@ -62,6 +53,7 @@ class Motherboard {
 private:
 
   unsigned int fstate;
+
 
 	const static int STEPPERS = STEPPER_COUNT;
 
@@ -74,13 +66,14 @@ private:
 
 	static Motherboard motherboard;
 public:
+
 	/// Reset the motherboard to its initial state.
 	/// This only resets the board, and does not send a reset
 	/// to any attached toolheads.
 	void reset();
 
 	//Set up timer counters and interrupts for this motherboard
-	void init_interupts();
+	void init_interrupts();
 
 	/// Get the UART that communicates with the host.
 	UART& getHostUART() { return UART::getHostUART(); }
@@ -116,5 +109,8 @@ public:
 	// set up pba and pbb clocks
 	void setClocks();
 };
+
+
+
 
 #endif // BOARDS_REPRAP32_V1P0_MOTHERBOARD_HH_

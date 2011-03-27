@@ -29,12 +29,12 @@
 
 class Pin {
 private:
-        static bool gpio_module_initialized ;
-	int pin_index : 4;
+     //   static bool gpio_module_initialized ;
+	int pin_index ;
 public:
-	Pin() : pin_index(-1) {initialize();}
-	Pin( int pin_index_in) : pin_index(pin_index_in) {initialize();}
-	bool isNull() { return (pin_index==-1); }
+	Pin() : pin_index(0) {}
+	Pin( int pin_index_in) : pin_index(pin_index_in) {}
+	bool isNull() { return (pin_index==0); }
 	void setDirection(bool out) {
 		if (out==true)
 			gpio_local_enable_pin_output_driver(pin_index);
@@ -49,9 +49,11 @@ public:
 			gpio_local_clr_gpio_pin(pin_index);
 	}
 	const int getPinIndex() const { return pin_index; }
-	void initialize() {
-	  if (!gpio_module_initialized) {gpio_local_init(); gpio_module_initialized=true; }
-	}
+	void setPinIndex(int newindex) { pin_index=newindex;}
+
+	//void initialize() {
+	//  if (!gpio_module_initialized) {gpio_local_init(); gpio_module_initialized=true; }
+	//}
 };
 
 

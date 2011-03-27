@@ -142,7 +142,7 @@
 
 // --- Debugging configuration ---
 // The pin which controls the debug LED (active high)
-#define DEBUG_PIN       Pin(AVR32_PIN_PA04) //Pin(PortB,7)
+#define DEBUG_PIN       Pin(AVR32_PIN_PA10) //Pin(PortB,7)
 // By default, debugging packets should be honored; this is made
 // configurable if we're short on cycles or EEPROM.
 // Define as 1 if debugging packets are honored; 0 if not.
