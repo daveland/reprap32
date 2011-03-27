@@ -85,6 +85,10 @@ __interrupt
 
 
 static void tc0_irq(void) {
+  int tc0_status;
+    // Read interrupt stauts register to clear interrupt from TC1
+    // else it will keep on nterrupting forever...
+       tc0_status= tc_read_sr(tc,0);
         Motherboard::getBoard().doInterrupt();
 }
 
@@ -164,6 +168,10 @@ __interrupt
 
 
 static void tc1_irq(void) {
+  int tc1_status;
+  // Read interrupt stauts register to clear interrupt from TC1
+  // else it will keep on nterrupting forever...
+     tc1_status= tc_read_sr(tc,1);
         if (blink_ovfs_remaining > 0) {
                 blink_ovfs_remaining--;
         } else {
@@ -220,6 +228,7 @@ Motherboard::Motherboard() {
 void Motherboard::reset() {
   setClocks();
   gpio_local_init();
+  DEBUG_PIN.setDirection(true);
   init_interrupts();
 
 //  DEBUG_PIN.setDirection(true);
@@ -386,16 +395,11 @@ void Motherboard::init_interrupts() {
 
 
 
-  //tc0_waveform_settings.channel=1;
-  //tc0_waveform_settings.acpc=6;
-  //tc0_waveform_settings.wavsel=0;
-  //tc0_waveform_settings.tcclks=0;  // PBA clock/2
 
-
-  INTC_register_interrupt(tc0_irq,1,1);
+  INTC_register_interrupt(tc0_irq,AVR32_TC_IRQ0,AVR32_INTC_INT2); // Motor timer, Int level 2 nect to highest level
   tc_configure_interrupts(tc,0,&tc0_interrupt_settings);
 
-  INTC_register_interrupt(tc1_irq,1,2);
+  INTC_register_interrupt(tc1_irq,AVR32_TC_IRQ1,AVR32_INTC_INT0); // LED timer , int level 0 ... lowest level
     tc_configure_interrupts(tc,1,&tc1_interrupt_settings);
 
 
@@ -408,25 +412,9 @@ void Motherboard::init_interrupts() {
  //  Timer CLOCKs are Master PLL Clock/2
  //  60.00Mhz/2=30.00Mhz
  // Set the compare triggers.
-   //tc_write_ra(tc, 0, CSYNC_HIGH_COUNT);     // Set RA value. 135 counts... 4.7us
-   //tc_write_rb(tc, CSYNC_TC_CHANNEL_ID, ACTIVE_VIDEO_COUNT);     // Set RB value. 290 counts  10.2us
+
    tc_write_rc(tc, 0, TIMER0_RC_COUNTS);     // Set RC value. REset counter here  ~64.0us
    tc_write_rc(tc, 1, TIMER1_RC_COUNTS);     // Set RC value. REset counter here  16.3ms
-   //tc_write_ra(tc, VSYNC_TC_CHANNEL_ID, 909);     // Set RA value. 135 counts... 4.7us
-   //tc_write_rb(tc, VSYNC_TC_CHANNEL_ID, ACTIVE_VIDEO_COUNT);     // Set RB value. 290 counts  10.2us
-   //tc_write_rc(tc, VSYNC_TC_CHANNEL_ID, line_rate_count);     // Set RC value. REset counter here  65.3535us
-
-   //  block mode register sets XC2 to be driven by TIOA1 outout of timer 1
-   // we use this as a trigger to reset timer 2 NOT as a clock line
-   //  this is enabled only during vertical sync lines to cause them to run at twice the rate
-
-   //tc_select_external_clock(tc, 2, TC_CH2_EXT_CLK2_SRC_TIOA1);
-
-   //INTC_register_interrupts(tc_irq, EXAMPLE_TC_CHANNEL_ID, &tc_int_settings);
-   //tc_configure_interrupts(tc,0, &tc0_interrupt_settings);
-
-   //INTC_register_interrupts(tc_irq, EXAMPLE_TC_CHANNEL_ID, &tc_int_settings);
-   //tc_configure_interrupts(tc, VSYNC_TC_CHANNEL_ID, &tc0_int_settings);
 
    // Enable all interrupts.
        Enable_global_interrupt();
@@ -435,8 +423,7 @@ void Motherboard::init_interrupts() {
    // Start the timer/counters.
    tc_start(tc,0);
    tc_start(tc,1);
-   //tc_start(tc, VSYNC_TC_CHANNEL_ID);
-   //tc_sync_trigger(tc);
+
 }
 
 
@@ -464,22 +451,11 @@ void Motherboard::doInterrupt() {
 
 /// Write an error code to the debug pin.
 void Motherboard::indicateError(int error_code) {
-Pin k(6);
-int j;
+
    if (error_code == 0) {
 		blink_state = BLINK_NONE;
-		gpio_local_enable_pin_output_driver(10);
-		gpio_local_set_gpio_pin(10);
-		gpio_local_clr_gpio_pin(10);
-		gpio_local_set_gpio_pin(10);
-		j=k.getPinIndex();
-		k.setPinIndex(10);
-		j=k.getPinIndex();
-		k.setDirection(true);
-		k.setValue(true);
-		k.setValue(false);
-		k.setValue(true);
-		//DEBUG_PIN.setValue(false);
+		DEBUG_PIN.setValue(true);
+		DEBUG_PIN.setValue(false);
 	}
 	else if (blink_count != error_code) {
 		blink_state = BLINK_OFF;
