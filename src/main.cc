@@ -70,7 +70,7 @@ void reset(bool hard_reset) {
 
 
 int main() {
-	//steppers::init(Motherboard::getBoard());
+	steppers::init(Motherboard::getBoard());
 	reset(true);
 	// Enable all interrupts.
 	Enable_global_interrupt();

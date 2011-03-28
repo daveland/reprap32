@@ -23,20 +23,16 @@
 #include "Configuration.hh"
 #include "../../Steppers.hh"
 #include "../../Command.hh"
-//#include "LiquidCrystal.hh"
-
 
 // AVR32 software Framework includes
 #include "intc.h"
 #include "pm.h"
 #include "flashc.h"
-//#include "tc.h"
 
 
 
 /// Instantiate static motherboard instance
 Motherboard Motherboard::motherboard;
-
 
 
 // Osc1 crystal is not mounted by default. Set the following definitions to the
@@ -71,7 +67,6 @@ tc_waveform_opt_t tc1_waveform_settings;
   // It's defined as local variable for ease-of-use causes and readability.
   volatile avr32_tc_t *tc = &AVR32_TC;
 
-//Motherboard::tc1_settings.etrgs=5
 
 /// Timercounter  one comparator match interrupt
 /// This interupts every INTERVAL_IN_MICROSECONDS us
@@ -156,6 +151,9 @@ enum blinker {
         BLINK_PAUSE
 } blink_state = BLINK_NONE;
 
+
+
+
 /// Timer 1 overflow interrupt
 #if __GNUC__
 __attribute__((__interrupt__))
@@ -163,8 +161,6 @@ __attribute__((__interrupt__))
 #pragma handler = AVR32_TC_IRQ_GROUP, 1
 __interrupt
 #endif
-
-
 
 
 static void tc1_irq(void) {
@@ -200,8 +196,6 @@ static void tc1_irq(void) {
 
 
 
-//LiquidCrystal lcd(Pin(PortC,4), Pin(PortC,3), Pin(PortD,7), Pin(PortG,2), Pin(PortG,1), Pin(PortG,0));
-
 /// add steppers to motherboard singleton object
 Motherboard::Motherboard() {
 	/// Set up the stepper pins on board creation
@@ -231,8 +225,6 @@ void Motherboard::reset() {
   DEBUG_PIN.setDirection(true);
   init_interrupts();
 
-//  DEBUG_PIN.setDirection(true);
-
 	indicateError(0); // turn off blinker
 	// Init and turn on power supply
 	getPSU().init();
@@ -250,35 +242,6 @@ void Motherboard::reset() {
 	getSlaveUART().enable(true);
 	getSlaveUART().in.reset();
 
-    //Reprap32  Motherboard interrupt setups
-	//TODO:  Add Timer counter setup for 2 timer interupts.
-
-
-	// Original AVR Code for 2 timer setups.
-	// Reset and configure timer 1, the microsecond and stepper
-	// interrupt timer.
-	//TCCR1A = 0x00;
-	//TCCR1B = 0x09;
-	//TCCR1C = 0x00;
-	//OCR1A = INTERVAL_IN_MICROSECONDS * 16;
-	//TIMSK1 = 0x02; // turn on OCR1A match interrupt
-	// Reset and configure timer 2, the debug LED flasher timer.
-	//TCCR2A = 0x00;
-	//TCCR2B = 0x07; // prescaler at 1/1024
-	//TIMSK2 = 0x01; // OVF flag on
-
-
-
-	// Configure the debug pin.
-	DEBUG_PIN.setDirection(true);
-//	lcd.begin(16,4);
-//	lcd.clear();
-//	lcd.home();
-//	lcd.write('H');
-//	lcd.write('e');
-//	lcd.write('l');
-//	lcd.write('l');
-//	lcd.write('o');
 }
 
 
@@ -302,15 +265,10 @@ void Motherboard::init_interrupts() {
 
 
  // The INTC driver has to be used only for GNU GCC for AVR32.
-#if __GNUC__
  // Initialize interrupt vectors.
  INTC_init_interrupts();
 
 
- // Register the TIMER0  interrupt handler to the interrupt controller.
- INTC_register_interrupt(&tc0_irq, AVR32_TC_IRQ0, AVR32_INTC_INT0);
-
-#endif
 
  // TC0 runs the stepper interuupt at 64us per interupt
  // Set the interrupt mode on Tc to enable RC compafre interrupts
@@ -395,6 +353,8 @@ void Motherboard::init_interrupts() {
 
 
 
+          // Register the TIMER0  interrupt handler to the interrupt controller.
+  //         INTC_register_interrupt(&tc0_irq, AVR32_TC_IRQ0, AVR32_INTC_INT0);
 
   INTC_register_interrupt(tc0_irq,AVR32_TC_IRQ0,AVR32_INTC_INT2); // Motor timer, Int level 2 nect to highest level
   tc_configure_interrupts(tc,0,&tc0_interrupt_settings);
