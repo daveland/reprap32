@@ -21,46 +21,70 @@
 #include "UART.hh"
 
 #include "usart.h"
+#include "intc.h"
 
 #include "AvrPort.hh"
 #include "Configuration.hh"
 
 
-#define REPRAP32_PBACLK_FREQ_HZ FOSC0  // PBA clock target frequency, in Hz
+#define REPRAP32_PBACLK_FREQ_HZ 14318181*2  // PBA clock target frequency, in Hz
 
-// RS485 USART
+// RS485 (Slave) USART #1  PA24-- RXD  PA23--TXD   Function 0 on pins
 // Get the USART1 BASE address and pin definitions in AVR32 format.
 //  This comes from usart.h
-#define RS485_USART               (&AVR32_USART1)
-#define RS485_USART_RX_PIN        AVR32_USART1_RXD_0_0_PIN
-#define RS485_USART_RX_FUNCTION   AVR32_USART1_RXD_0_0_FUNCTION
-#define RS485_USART_TX_PIN        AVR32_USART1_TXD_0_0_PIN
-#define RS485_USART_TX_FUNCTION   AVR32_USART1_TXD_0_0_FUNCTION
-#define RS485_USART_CLOCK_MASK    AVR32_USART1_CLK_PBA
-#define RS485_PDCA_CLOCK_HSB      AVR32_PDCA_CLK_HSB
-#define RS485_PDCA_CLOCK_PB       AVR32_PDCA_CLK_PBA
+#define SLAVE_USART               (&AVR32_USART1)
+#define SLAVE_USART_RX_PIN        AVR32_USART1_RXD_0_0_PIN
+#define SLAVE_USART_RX_FUNCTION   AVR32_USART1_RXD_0_0_FUNCTION
+#define SLAVE_USART_TX_PIN        AVR32_USART1_TXD_0_0_PIN
+#define SLAVE_USART_TX_FUNCTION   AVR32_USART1_TXD_0_0_FUNCTION
+#define SLAVE_USART_IRQ             AVR32_USART1_IRQ
+#define SLAVE_USART_BAUDRATE        38400
+#define SLAVE_USART_CLOCK_MASK    AVR32_USART1_CLK_PBA
+#define SLAVE_PDCA_CLOCK_HSB      AVR32_PDCA_CLK_HSB
+#define SLAVE_PDCA_CLOCK_PB       AVR32_PDCA_CLK_PBA
 
-// COMMS USART
+// COMMS (Host) USART#2  PA27--RXD, PA26--TXD  Function 1 on pins
 // Get the USART2 BASE address and pin definitions in AVR32 format.
 //  This comes from usart.h
-#define COMM_USART               (&AVR32_USART2)
-#define COMM_USART_RX_PIN        AVR32_USART2_RXD_0_0_PIN
-#define COMM_USART_RX_FUNCTION   AVR32_USART2_RXD_0_0_FUNCTION
-#define COMM_USART_TX_PIN        AVR32_USART2_TXD_0_0_PIN
-#define COMM_USART_TX_FUNCTION   AVR32_USART2_TXD_0_0_FUNCTION
-#define COMM_USART_CLOCK_MASK    AVR32_USART2_CLK_PBA
-#define COMM_PDCA_CLOCK_HSB      AVR32_PDCA_CLK_HSB
-#define COMM_PDCA_CLOCK_PB       AVR32_PDCA_CLK_PBA
+#define HOST_USART               (&AVR32_USART2)
+#define HOST_USART_RX_PIN        AVR32_USART2_RXD_0_1_PIN
+#define HOST_USART_RX_FUNCTION   AVR32_USART2_RXD_0_1_FUNCTION
+#define HOST_USART_TX_PIN        AVR32_USART2_TXD_0_1_PIN
+#define HOST_USART_TX_FUNCTION   AVR32_USART2_TXD_0_1_FUNCTION
+#define HOST_USART_IRQ             AVR32_USART2_IRQ
+#define HOST_USART_BAUDRATE        38400
+#define HOST_USART_CLOCK_MASK    AVR32_USART2_CLK_PBA
+#define HOST_PDCA_CLOCK_HSB      AVR32_PDCA_CLK_HSB
+#define HOST_PDCA_CLOCK_PB       AVR32_PDCA_CLK_PBA
 
 
 // Setup TWO Uarts one for COMMs and another for the extruder Rs485 Port
-// USART 2 is the Comms Usart
-// Usart 1 is the RS485 Usart
+// USART 2 is the HOST Comms Usart  PA27--RXD, PA26--TXD
+// Usart 1 is the SLAVE RS485 Usart  PA24-- RXD  PA23--TXD
 
 
-#define INIT_SERIAL(uart_) \
-{ \
-}
+static const gpio_map_t HOST_USART_GPIO_MAP =
+  {
+    {HOST_USART_RX_PIN, HOST_USART_RX_FUNCTION},
+    {HOST_USART_TX_PIN, HOST_USART_TX_FUNCTION}
+  };
+
+static const gpio_map_t SLAVE_USART_GPIO_MAP =
+  {
+    {SLAVE_USART_RX_PIN, SLAVE_USART_RX_FUNCTION},
+    {SLAVE_USART_TX_PIN, SLAVE_USART_TX_FUNCTION}
+  };
+
+static const usart_options_t HOST_USART_OPTIONS =
+  {
+    HOST_USART_BAUDRATE,8,USART_NO_PARITY,USART_1_STOPBIT,USART_NORMAL_CHMODE
+  };
+
+static const usart_options_t SLAVE_USART_OPTIONS =
+  {
+    SLAVE_USART_BAUDRATE,8,USART_NO_PARITY,USART_1_STOPBIT,USART_NORMAL_CHMODE
+  };
+
 
 #define ENABLE_SERIAL_INTERRUPTS(uart_) \
 { \
@@ -93,14 +117,92 @@ inline void speak() {
 }
 
 
+
+/*! \brief The USART interrupt handler.
+ *
+ * \note The `__attribute__((__interrupt__))' (under GNU GCC for AVR32) and
+ *       `__interrupt' (under IAR Embedded Workbench for Atmel AVR32) C function
+ *       attributes are used to manage the `rete' instruction.
+ */
+#if defined (__GNUC__)
+__attribute__((__interrupt__))
+#elif defined(__ICCAVR32__)
+__interrupt
+#endif
+static void host_usart_int_handler(void)
+{
+  int c;
+
+  // In the code line below, the interrupt priority level does not need to be
+  // explicitly masked as it is already because we are within the interrupt
+  // handler.
+  // The USART Rx interrupt flag is cleared by side effect when trying to read the
+  // received character.
+  // Waiting until the interrupt has actually been cleared is here useless as
+  // the call to usart_write_char will take enough time for this before the
+  // interrupt handler is leaved and the interrupt priority level is unmasked by
+  // the CPU.
+  if (usart_read_char(HOST_USART, &c)==USART_SUCCESS)
+    UART::uart[0].in.processByte( c );
+
+  // Print the next buffered character to USART TX.
+
+  if (UART::uart[0].out.isSending())
+    usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());
+}
+
+/*! \brief The USART interrupt handler.
+ *
+ * \note The `__attribute__((__interrupt__))' (under GNU GCC for AVR32) and
+ *       `__interrupt' (under IAR Embedded Workbench for Atmel AVR32) C function
+ *       attributes are used to manage the `rete' instruction.
+ */
+#if defined (__GNUC__)
+__attribute__((__interrupt__))
+#elif defined(__ICCAVR32__)
+__interrupt
+#endif
+static void slave_usart_int_handler(void)
+{
+  int c;
+
+  // In the code line below, the interrupt priority level does not need to be
+  // explicitly masked as it is already because we are within the interrupt
+  // handler.
+  // The USART Rx interrupt flag is cleared by side effect when reading the
+  // received character.
+  // Waiting until the interrupt has actually been cleared is here useless as
+  // the call to usart_write_char will take enough time for this before the
+  // interrupt handler is leaved and the interrupt priority level is unmasked by
+  // the CPU.
+
+  if (usart_read_char(SLAVE_USART, &c)==USART_SUCCESS){
+     if (loopback_bytes > 0) {
+         loopback_bytes--; // eat the byte... don't process it, its just an echoed character
+     } else {
+     UART::uart[1].in.processByte(c);
+    }
+  }
+  // Print the next buffered character to USART TX.
+
+
+  if (UART::uart[1].out.isSending()) {
+              loopback_bytes++;
+              usart_write_char(SLAVE_USART, UART::uart[1].out.getNextByteToSend());
+      } else {
+                listen();
+       }
+}
+
 // Constructor for UART objects
 // Build them , with full initialization
 
 UART::UART(uart_t index) : index_(index), enabled_(false) {
 	if (index_ == HOST_UART) {
-		INIT_SERIAL(HOST_UART);
+	  INTC_register_interrupt(&host_usart_int_handler, HOST_USART_IRQ, AVR32_INTC_INT0);
+
 	} else if (index_ == SLAVE_UART) {
-		INIT_SERIAL(SLAVE_UART);
+	  INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT0);
 		// UART2 is an RS485 port, and requires additional setup.
 		// Tx enable = RS485_DE= PA13, high=Drive enable, Low= Receiver enabled
 		TX_ENABLE_PIN.setDirection(true);
@@ -109,15 +211,15 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 	}
 }
 
-#define SEND_BYTE(uart_,data_) UDR##uart_ = data_
+
 
 /// Subsequent bytes will be triggered by the tx complete interrupt.
 /// Define a
 void UART::beginSend() {
 	if (!enabled_) { return; }
-	uint8_t send_byte = out.getNextByteToSend();
+
 	if (index_ == 0) {
-		//SEND_BYTE(0,send_byte);
+	  usart_write_char(HOST_USART,out.getNextByteToSend());
 	} else if (index_ == 1) {
 		speak();
 		loopback_bytes = 1;

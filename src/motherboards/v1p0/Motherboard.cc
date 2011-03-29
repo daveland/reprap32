@@ -376,6 +376,11 @@ void Motherboard::init_interrupts() {
    tc_write_rc(tc, 0, TIMER0_RC_COUNTS);     // Set RC value. REset counter here  ~64.0us
    tc_write_rc(tc, 1, TIMER1_RC_COUNTS);     // Set RC value. REset counter here  16.3ms
 
+
+
+
+
+
    // Enable all interrupts.
        Enable_global_interrupt();
 
