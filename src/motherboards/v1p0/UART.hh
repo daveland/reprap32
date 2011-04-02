@@ -30,13 +30,13 @@
  */
 
 enum uart_t {
-        HOST_UART =2,
-        SLAVE_UART =1
+        HOST_UART =1,
+        SLAVE_UART =0
 };
 
 class UART {
 private:
-	const uint8_t index_;
+	 uint8_t index_;
 	volatile bool enabled_;
 public:
 	UART(uart_t index);

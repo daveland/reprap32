@@ -86,16 +86,16 @@ uint16_t Packet::read16(uint8_t index) const {
 }
 uint32_t Packet::read32(uint8_t index) const {
 	union {
-		// AVR is little-endian
+		// AVR32 is BIG -endian
 		int32_t a;
 		struct {
 			uint8_t data[4];
 		} b;
 	} shared;
-	shared.b.data[0] = payload[index];
-	shared.b.data[1] = payload[index+1];
-	shared.b.data[2] = payload[index+2];
-	shared.b.data[3] = payload[index+3];
+	shared.b.data[3] = payload[index];  // least significant byte
+	shared.b.data[2] = payload[index+1];
+	shared.b.data[1] = payload[index+2];
+	shared.b.data[0] = payload[index+3]; // Most significant byte
 
 	return shared.a;
 }

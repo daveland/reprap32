@@ -215,6 +215,9 @@ typedef struct
  */
 //! @{
 
+/* clear RX faming and overun errors */
+void usart_clear_rx_errors(volatile avr32_usart_t *usart);
+
 /*! \brief Resets the USART and disables TX and RX.
  *
  * \param usart   Base address of the USART instance.

@@ -22,12 +22,13 @@
 
 #include "usart.h"
 #include "intc.h"
+#include "gpio.h"
 
 #include "AvrPort.hh"
 #include "Configuration.hh"
 
 
-#define REPRAP32_PBACLK_FREQ_HZ 14318181*2  // PBA clock target frequency, in Hz
+#define REPRAP32_PBACLK_FREQ_HZ 14318181*4  // PBA clock target frequency, in Hz
 
 // RS485 (Slave) USART #1  PA24-- RXD  PA23--TXD   Function 0 on pins
 // Get the USART1 BASE address and pin definitions in AVR32 format.
@@ -47,10 +48,10 @@
 // Get the USART2 BASE address and pin definitions in AVR32 format.
 //  This comes from usart.h
 #define HOST_USART               (&AVR32_USART2)
-#define HOST_USART_RX_PIN        AVR32_USART2_RXD_0_1_PIN
-#define HOST_USART_RX_FUNCTION   AVR32_USART2_RXD_0_1_FUNCTION
-#define HOST_USART_TX_PIN        AVR32_USART2_TXD_0_1_PIN
-#define HOST_USART_TX_FUNCTION   AVR32_USART2_TXD_0_1_FUNCTION
+#define HOST_USART_RX_PIN        AVR32_USART2_RXD_0_0_PIN
+#define HOST_USART_RX_FUNCTION   AVR32_USART2_RXD_0_0_FUNCTION
+#define HOST_USART_TX_PIN        AVR32_USART2_TXD_0_0_PIN
+#define HOST_USART_TX_FUNCTION   AVR32_USART2_TXD_0_0_FUNCTION
 #define HOST_USART_IRQ             AVR32_USART2_IRQ
 #define HOST_USART_BAUDRATE        38400
 #define HOST_USART_CLOCK_MASK    AVR32_USART2_CLK_PBA
@@ -142,13 +143,17 @@ static void host_usart_int_handler(void)
   // the call to usart_write_char will take enough time for this before the
   // interrupt handler is leaved and the interrupt priority level is unmasked by
   // the CPU.
-  if (usart_read_char(HOST_USART, &c)==USART_SUCCESS)
-    UART::uart[0].in.processByte( c );
+  usart_read_char(HOST_USART, &c);
+  //if (usart_read_char(HOST_USART, &c)==USART_SUCCESS)
+    //UART::uart[0].in.processByte( c );
+  //else
+   // usart_clear_rx_errors(HOST_USART);
+  usart_write_char(HOST_USART, c);
 
   // Print the next buffered character to USART TX.
 
-  if (UART::uart[0].out.isSending())
-    usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());
+  //if (UART::uart[0].out.isSending())
+    //usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());
 }
 
 /*! \brief The USART interrupt handler.
@@ -199,8 +204,15 @@ static void slave_usart_int_handler(void)
 
 UART::UART(uart_t index) : index_(index), enabled_(false) {
 	if (index_ == HOST_UART) {
-	  INTC_register_interrupt(&host_usart_int_handler, HOST_USART_IRQ, AVR32_INTC_INT0);
+	  gpio_enable_module_pin(AVR32_USART2_RXD_0_0_PIN,AVR32_USART2_RXD_0_0_FUNCTION);
+	  gpio_enable_module_pin(AVR32_USART2_TXD_0_0_PIN,AVR32_USART2_TXD_0_0_FUNCTION);
+	  usart_init_rs232(HOST_USART, &HOST_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
+	              // print(EXAMPLE_USART, ".: Using interrupts with the USART :.\n\n");
 
+	  INTC_register_interrupt(&host_usart_int_handler, HOST_USART_IRQ, AVR32_INTC_INT0);
+	  // Assign GPIO to USART.
+
+	   HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK;
 	} else if (index_ == SLAVE_UART) {
 	  INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT0);
 		// UART2 is an RS485 port, and requires additional setup.
@@ -210,7 +222,7 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 		listen();
 	}
 }
-
+//TCA1_TC_CHANNEL_PIN
 
 
 /// Subsequent bytes will be triggered by the tx complete interrupt.
@@ -230,8 +242,8 @@ void UART::beginSend() {
 void UART::enable(bool enabled) {
 	enabled_ = enabled;
 	if (index_ == 0) {
-		if (enabled) { ENABLE_SERIAL_INTERRUPTS(0); }
-		else { DISABLE_SERIAL_INTERRUPTS(0); }
+		if (enabled) { HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK; }
+		else { HOST_USART->idr = AVR32_USART_IDR_RXRDY_MASK | AVR32_USART_IDR_TXRDY_MASK; }
 	} else if (index_ == 1) {
 		if (enabled) { ENABLE_SERIAL_INTERRUPTS(1); }
 		else { DISABLE_SERIAL_INTERRUPTS(1); }

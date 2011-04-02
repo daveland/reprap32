@@ -221,6 +221,7 @@ Motherboard::Motherboard() {
 /// to any attached toolheads.
 void Motherboard::reset() {
   setClocks();
+
   gpio_local_init();
   DEBUG_PIN.setDirection(true);
   init_interrupts();
@@ -237,6 +238,8 @@ void Motherboard::reset() {
 		stepper[i].init(i);
 	}
 	// Initialize the host and slave UARTs
+	UART mbuart=UART::UART(HOST_UART);  // dummy instance to force Creation of static instanses
+	//mbuart.enable(true);
 	getHostUART().enable(true);
 	getHostUART().in.reset();
 	getSlaveUART().enable(true);

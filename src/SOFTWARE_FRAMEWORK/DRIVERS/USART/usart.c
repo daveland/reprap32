@@ -254,6 +254,12 @@ static int usart_set_spi_slave_baudrate(volatile avr32_usart_t *usart)
  */
 //! @{
 
+// rststa clears the overrun flags.
+
+void usart_clear_rx_errors(volatile avr32_usart_t *usart)
+{
+  usart->cr=AVR32_USART_CR_RSTSTA_MASK;
+}
 
 void usart_reset(volatile avr32_usart_t *usart)
 {
