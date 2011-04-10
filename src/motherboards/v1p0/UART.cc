@@ -87,14 +87,6 @@ static const usart_options_t SLAVE_USART_OPTIONS =
   };
 
 
-#define ENABLE_SERIAL_INTERRUPTS(uart_) \
-{ \
-}
-
-#define DISABLE_SERIAL_INTERRUPTS(uart_) \
-{ \
-}
-
 
 // declare Two Global UART objects and assign them to the class variable array uart[]
 // This runs the constructors and the port initialization
@@ -111,6 +103,7 @@ volatile uint8_t loopback_bytes = 0;
 // This saves an IO pin for other uses
 inline void listen() {
 	TX_ENABLE_PIN.setValue(false);
+	//TODO: disable RX here so we don't see the transmitted chars
 }
 
 inline void speak() {
@@ -204,17 +197,21 @@ static void slave_usart_int_handler(void)
 
 UART::UART(uart_t index) : index_(index), enabled_(false) {
 	if (index_ == HOST_UART) {
-	  gpio_enable_module_pin(AVR32_USART2_RXD_0_0_PIN,AVR32_USART2_RXD_0_0_FUNCTION);
-	  gpio_enable_module_pin(AVR32_USART2_TXD_0_0_PIN,AVR32_USART2_TXD_0_0_FUNCTION);
-	  usart_init_rs232(HOST_USART, &HOST_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
+                    gpio_enable_module_pin(AVR32_USART2_RXD_0_0_PIN,AVR32_USART2_RXD_0_0_FUNCTION);
+                    gpio_enable_module_pin(AVR32_USART2_TXD_0_0_PIN,AVR32_USART2_TXD_0_0_FUNCTION);
+                    usart_init_rs232(HOST_USART, &HOST_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
 	              // print(EXAMPLE_USART, ".: Using interrupts with the USART :.\n\n");
 
-	  INTC_register_interrupt(&host_usart_int_handler, HOST_USART_IRQ, AVR32_INTC_INT0);
-	  // Assign GPIO to USART.
+                     INTC_register_interrupt(&host_usart_int_handler, HOST_USART_IRQ, AVR32_INTC_INT0);
+                     // Assign GPIO to USART.
 
-	   HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK;
+                     HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK;
 	} else if (index_ == SLAVE_UART) {
-	  INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT0);
+                    gpio_enable_module_pin(AVR32_USART1_RXD_0_0_PIN,AVR32_USART1_RXD_0_0_FUNCTION);
+	            gpio_enable_module_pin(AVR32_USART1_TXD_0_0_PIN,AVR32_USART1_TXD_0_0_FUNCTION);
+	            usart_init_rs232(SLAVE_USART, &SLAVE_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
+
+	            INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT0);
 		// UART2 is an RS485 port, and requires additional setup.
 		// Tx enable = RS485_DE= PA13, high=Drive enable, Low= Receiver enabled
 		TX_ENABLE_PIN.setDirection(true);
@@ -225,17 +222,17 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 //TCA1_TC_CHANNEL_PIN
 
 
-/// Subsequent bytes will be triggered by the tx complete interrupt.
-/// Define a
+/// Subsequent bytes will be triggered by the tx complete interrupts.
+/// Once started this never shuts up!!
 void UART::beginSend() {
 	if (!enabled_) { return; }
-
+	uint8_t send_byte =out.getNextByteToSend();
 	if (index_ == 0) {
-	  usart_write_char(HOST_USART,out.getNextByteToSend());
+	  usart_write_char(HOST_USART,send_byte);
 	} else if (index_ == 1) {
 		speak();
 		loopback_bytes = 1;
-		//SEND_BYTE(1,send_byte);
+		usart_write_char(SLAVE_USART,send_byte);
 	}
 }
 
@@ -245,8 +242,8 @@ void UART::enable(bool enabled) {
 		if (enabled) { HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK; }
 		else { HOST_USART->idr = AVR32_USART_IDR_RXRDY_MASK | AVR32_USART_IDR_TXRDY_MASK; }
 	} else if (index_ == 1) {
-		if (enabled) { ENABLE_SERIAL_INTERRUPTS(1); }
-		else { DISABLE_SERIAL_INTERRUPTS(1); }
+		if (enabled) { SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK; }
+		else { SLAVE_USART->idr = AVR32_USART_IDR_RXRDY_MASK | AVR32_USART_IDR_TXRDY_MASK; }
 	}
 }
 

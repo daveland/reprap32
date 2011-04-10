@@ -81,8 +81,9 @@ void InPacket::processByte(uint8_t b) {
 uint8_t Packet::read8(uint8_t index) const {
 	return payload[index];
 }
+
 uint16_t Packet::read16(uint8_t index) const {
-	return payload[index] | (payload[index + 1] << 8);
+	return payload[index] | (payload[index+1] << 8);
 }
 uint32_t Packet::read32(uint8_t index) const {
 	union {
