@@ -70,6 +70,8 @@ void reset(bool hard_reset) {
 
 
 int main() {
+        // this call and builds the motherboard singleton instance
+        // and then initializes the steppers
 	steppers::init(Motherboard::getBoard());
 	reset(true);
 	// Enable all interrupts.
@@ -77,7 +79,7 @@ int main() {
 
 	while (1) {
 		// Toolhead interaction thread.
-		tool::runToolSlice();
+		//tool::runToolSlice();
 		// Host interaction thread.
 		runHostSlice();
 		// Command handling thread.

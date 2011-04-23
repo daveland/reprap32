@@ -32,13 +32,13 @@
 
 
 /// Instantiate static motherboard instance
-Motherboard Motherboard::motherboard;
+//Motherboard Motherboard::motherboard;
 
 
 // Osc1 crystal is not mounted by default. Set the following definitions to the
 // appropriate values if a custom Osc1 crystal is mounted on your board.
-#define FOSC1           14318181                              //!< Osc1 frequency: Hz.
-#define OSC1_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
+#define FOSC0           12000000                              //!< Osc1 frequency: Hz.
+#define OSC0_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
 
 // motherboard Tick timer ( determines INTERVAL_IN_MICROSECONDS )
 // this timer overflows once every INTERVAL_IN_MICROSECONDS
@@ -49,17 +49,17 @@ Motherboard Motherboard::motherboard;
 //
 tc_interrupt_t  tc0_interrupt_settings;
 tc_waveform_opt_t tc0_waveform_settings;
-#define FPBA FOSC1/2
-#define TIMER0_RC_COUNTS   1833 //  TIMER runs @ FPBA/2  counts=64us/FPBA/2
+#define FPBA FOSC0*10/2  // 60Mhz
+#define TIMER0_RC_COUNTS   1920 //  TIMER runs @ FPBA/2  counts=64us/FPBA/2
 
 
 #  define LED_TC_CHANNEL_ID         1
 // TC1 interrupt is the LED timer timteruupt for LED status
 //  16.384ms per interupt.
-//  Use Timer clock5 = PBAclk/128  = FOSC/256
+//  Use Timer clock5 = PBAclk/128
 tc_interrupt_t  tc1_interrupt_settings;
 tc_waveform_opt_t tc1_waveform_settings;
-#define TIMER1_RC_COUNTS   3728 //  TIMER1 runs @ FPBA/256  =223722Khz
+#define TIMER1_RC_COUNTS   7680 //  TIMER1 runs @ FPBA/128  =468750Khz
 
 
 
@@ -91,18 +91,15 @@ static void tc0_irq(void) {
 // this depends of Crystal frequency
 void Motherboard::setClocks() {
 
-    fstate=flashc_get_wait_state();
-    fstate=1;
-    flashc_set_wait_state(fstate);
-    fstate=26;
-    fstate=flashc_get_wait_state();
 
+    // one wait state for Flash memory access
+    flashc_set_wait_state(1);
 
-    pm_enable_osc1_crystal(&AVR32_PM, FOSC1);            // Enable the Osc1 in crystal mode
+    pm_enable_osc0_crystal(&AVR32_PM, FOSC0);            // Enable the Osc0 in crystal mode
 
-    pm_enable_clk1(&AVR32_PM, OSC1_STARTUP);                  // Crystal startup time - This parameter is critical and depends on the characteristics of the crystal
+    pm_enable_clk0(&AVR32_PM, OSC0_STARTUP);                  // Crystal startup time - This parameter is critical and depends on the characteristics of the crystal
 
-     pm_pll_setup(&AVR32_PM,0,7,1,1,16);                      // 7+1 is Mult by 8
+     pm_pll_setup(&AVR32_PM,0,9,1,0,16);                      // 9+1 is Mult by 10 = 12Mhz *10=120Mhz pll freq
      pm_pll_set_option(&AVR32_PM, 0, // pll.
                          1,  // pll_freq.
                          1,  // pll_div2.
@@ -111,14 +108,14 @@ void Motherboard::setClocks() {
 
      pm_wait_for_pll0_locked(&AVR32_PM);
      pm_cksel(&AVR32_PM,
-                0,   // pbadiv.  //pba=57.272727Mhz
+                0,   // pbadiv.  //pba=60.000Mhz
                 0,   // pbasel.
-                0,   // pbbdiv.  //pbb=57.272727Mhz
+                0,   // pbbdiv.  //pbb=60.000Mhz
                 0,   // pbbsel.
-                0,   // hsbdiv. /// cpu and hsb share same settings =57.272727Mhz
+                0,   // hsbdiv. /// cpu and hsb share same settings =60.00000Mhz
                 0);  // hsbsel.
 
-     pm_switch_to_clock(&AVR32_PM, AVR32_PM_MCCTRL_MCSEL_PLL0);  // Then switch main clock to Osc1 and PLL0
+     pm_switch_to_clock(&AVR32_PM, AVR32_PM_MCCTRL_MCSEL_PLL0);  // Then switch main clock to Osc0 and PLL0
 
 
 
@@ -238,7 +235,7 @@ void Motherboard::reset() {
 		stepper[i].init(i);
 	}
 	// Initialize the host and slave UARTs
-	UART mbuart=UART::UART(HOST_UART);  // dummy instance to force Creation of static instanses
+	//UART mbuart=UART::UART(HOST_UART);  // dummy instance to force Creation of static instanses
 	//mbuart.enable(true);
 	getHostUART().enable(true);
 	getHostUART().in.reset();

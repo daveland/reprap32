@@ -28,7 +28,7 @@
 #include "Configuration.hh"
 
 
-#define REPRAP32_PBACLK_FREQ_HZ 14318181*4  // PBA clock target frequency, in Hz
+#define REPRAP32_PBACLK_FREQ_HZ 60000000  // PBA clock target frequency, in Hz
 
 // RS485 (Slave) USART #1  PA24-- RXD  PA23--TXD   Function 0 on pins
 // Get the USART1 BASE address and pin definitions in AVR32 format.
@@ -125,7 +125,7 @@ __interrupt
 #endif
 static void host_usart_int_handler(void)
 {
-  int c;
+  int c,status;
 
   // In the code line below, the interrupt priority level does not need to be
   // explicitly masked as it is already because we are within the interrupt
@@ -136,18 +136,30 @@ static void host_usart_int_handler(void)
   // the call to usart_write_char will take enough time for this before the
   // interrupt handler is leaved and the interrupt priority level is unmasked by
   // the CPU.
-  usart_read_char(HOST_USART, &c);
-  //if (usart_read_char(HOST_USART, &c)==USART_SUCCESS)
-    //UART::uart[0].in.processByte( c );
-  //else
-   // usart_clear_rx_errors(HOST_USART);
-  usart_write_char(HOST_USART, c);
+
+  status=usart_read_char(HOST_USART, &c);
+  if (status==USART_SUCCESS)
+    UART::uart[0].in.processByte( c );
+
+  if (status==USART_RX_ERROR)  /// clear the usart error
+    {
+    c=HOST_USART->rhr;
+    usart_clear_rx_errors(HOST_USART);
+    }
+
 
   // Print the next buffered character to USART TX.
 
-  //if (UART::uart[0].out.isSending())
-    //usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());
+  if (UART::uart[0].out.isSending())
+    if (usart_tx_ready(HOST_USART))
+      usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());
+
+  if (!UART::uart[0].out.isSending())
+    HOST_USART->idr = AVR32_USART_IDR_TXRDY_MASK;  // disable TX interrupt
+
 }
+
+
 
 /*! \brief The USART interrupt handler.
  *
@@ -223,11 +235,14 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 
 
 /// Subsequent bytes will be triggered by the tx complete interrupts.
-/// Once started this never shuts up!!
+/// Once started this never shuts up!! unless you disable the TX interupt
+
 void UART::beginSend() {
 	if (!enabled_) { return; }
 	uint8_t send_byte =out.getNextByteToSend();
 	if (index_ == 0) {
+
+	  HOST_USART->ier = AVR32_USART_IER_TXRDY_MASK;  // enable TX interrupt
 	  usart_write_char(HOST_USART,send_byte);
 	} else if (index_ == 1) {
 		speak();
@@ -239,11 +254,11 @@ void UART::beginSend() {
 void UART::enable(bool enabled) {
 	enabled_ = enabled;
 	if (index_ == 0) {
-		if (enabled) { HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK; }
-		else { HOST_USART->idr = AVR32_USART_IDR_RXRDY_MASK | AVR32_USART_IDR_TXRDY_MASK; }
+		if (enabled) { HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK; }
+		else { HOST_USART->idr = AVR32_USART_IDR_RXRDY_MASK; }
 	} else if (index_ == 1) {
-		if (enabled) { SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK; }
-		else { SLAVE_USART->idr = AVR32_USART_IDR_RXRDY_MASK | AVR32_USART_IDR_TXRDY_MASK; }
+		if (enabled) { SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK ; }
+		else { SLAVE_USART->idr = AVR32_USART_IDR_RXRDY_MASK; }
 	}
 }
 

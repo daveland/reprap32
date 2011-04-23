@@ -15,7 +15,7 @@
 </extensions>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
-<configuration artifactName="mycpp1" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="AVR32 Standalone debug configuration" id="avr32.managedbuild.config.gnu.exe.debug.1158979127" name="Debug" parent="avr32.managedbuild.config.gnu.exe.debug">
+<configuration artifactExtension="elf" artifactName="mycpp1" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="AVR32 Standalone debug configuration" id="avr32.managedbuild.config.gnu.exe.debug.1158979127" name="Debug" parent="avr32.managedbuild.config.gnu.exe.debug">
 <folderInfo id="avr32.managedbuild.config.gnu.exe.debug.1158979127." name="/" resourcePath="">
 <toolChain id="avr32.managedbuild.toolchain.gnu.exe.debug.939419434" name="AVR32 Standalone GCC" superClass="avr32.managedbuild.toolchain.gnu.exe.debug">
 <targetPlatform id="avr32.managedbuild.target.gnu.platform.exe.debug.745103498" name="%PlatformName.Dbg" superClass="avr32.managedbuild.target.gnu.platform.exe.debug"/>
@@ -95,6 +95,7 @@
 <tool id="avr32.managedbuild.tool.gnu.cpp.linker.exe.debug.872713140" name="AVR32/GNU C++ Linker" superClass="avr32.managedbuild.tool.gnu.cpp.linker.exe.debug">
 <option id="avr32.cpp.linker.option.mcu.2068574974" name="Microcontroller Unit" superClass="avr32.cpp.linker.option.mcu" value="-mpart=uc3b0256" valueType="string"/>
 <option id="gnu.cpp.link.option.nostart.1495431184" name="Do not use standard start files (-nostartfiles)" superClass="gnu.cpp.link.option.nostart" value="true" valueType="boolean"/>
+<option id="avr32.cpp.linker.option.gc-sections.1942262158" name="Garbage collect unused sections" superClass="avr32.cpp.linker.option.gc-sections" value="true" valueType="boolean"/>
 <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1718978244" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 <additionalInput kind="additionalinput" paths="$(LIBS)"/>

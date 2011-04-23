@@ -20,7 +20,7 @@
 
 
 
-#define ATOMIC_BLOCK(ATOMIC_FORCEON)
+#define KATOMIC_BLOCK(ATOMIC_FORCEON)
 
 #endif // ATOMIC_HH_
 

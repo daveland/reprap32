@@ -52,7 +52,7 @@
 class Motherboard {
 private:
 
-  unsigned int fstate;
+  //unsigned int fstate;
 
 
 	const static int STEPPERS = STEPPER_COUNT;
@@ -61,8 +61,15 @@ private:
 	PSU psu;
 	/// Microseconds since board initialization
 	volatile micros_t micros;
-	/// Private constructor; use the singleton
+	/// Private constructor... only this object
+	// can call the constructor all other construction
+	// calls are prohibited.. I.e a Singleton
 	Motherboard();
+	// Make the copy constructor private as well
+	// This insures the singleton cannot be copied.
+	Motherboard(const Motherboard&);
+	// Assignment prevention
+	Motherboard& operator= (const Motherboard&);
 
 	static Motherboard motherboard;
 public:
@@ -102,7 +109,11 @@ public:
 	uint8_t getCurrentError();
 
 	/// Get the motherboard instance.
-	static Motherboard& getBoard() { return motherboard; }
+	// build the static instance the first time we get it
+	//
+	static Motherboard& getBoard()
+	{ static Motherboard motherboard;
+	  return motherboard; }
 
 	/// Perform the timer interrupt routine.
 	void doInterrupt();

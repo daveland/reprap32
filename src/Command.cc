@@ -40,9 +40,9 @@ bool paused = false;
 
 uint16_t getRemainingCapacity() {
 	uint16_t sz;
-	//ATOMIC_BLOCK(ATOMIC_FORCEON) {
+	AVR32_ENTER_CRITICAL_REGION( )
 		sz = command_buffer.getRemainingCapacity();
-	//}
+	AVR32_LEAVE_CRITICAL_REGION( )
 	return sz;
 }
 
@@ -68,29 +68,29 @@ uint8_t pop8() {
 
 int16_t pop16() {
 	union {
-		// AVR is little-endian
+	  // AVR32 is BIG -endian
 		int16_t a;
 		struct {
 			uint8_t data[2];
 		} b;
 	} shared;
-	shared.b.data[0] = command_buffer.pop();
 	shared.b.data[1] = command_buffer.pop();
+	shared.b.data[0] = command_buffer.pop();
 	return shared.a;
 }
 
 int32_t pop32() {
 	union {
-		// AVR is little-endian
+	  // AVR32 is BIG -endian
 		int32_t a;
 		struct {
 			uint8_t data[4];
 		} b;
 	} shared;
-	shared.b.data[0] = command_buffer.pop();
-	shared.b.data[1] = command_buffer.pop();
-	shared.b.data[2] = command_buffer.pop();
 	shared.b.data[3] = command_buffer.pop();
+	shared.b.data[2] = command_buffer.pop();
+	shared.b.data[1] = command_buffer.pop();
+	shared.b.data[0] = command_buffer.pop();
 	return shared.a;
 }
 

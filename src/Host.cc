@@ -28,6 +28,7 @@
 #include "Main.hh"
 #include "Errors.hh"
 #include "SDCard.hh"
+#include "compiler.h"
 
 #define _BV(bit) (1 << (bit))
 
@@ -42,7 +43,7 @@ bool processQueryPacket(const InPacket& from_host, OutPacket& to_host);
 // Timeout from time first bit recieved until we abort packet reception
 Timeout packet_in_timeout;
 
-#define HOST_PACKET_TIMEOUT_MS 20
+#define HOST_PACKET_TIMEOUT_MS 2000
 #define HOST_PACKET_TIMEOUT_MICROS (1000L*HOST_PACKET_TIMEOUT_MS)
 
 #define HOST_TOOL_RESPONSE_TIMEOUT_MS 50
@@ -123,7 +124,7 @@ bool processCommandPacket(const InPacket& from_host, OutPacket& to_host) {
 			}
 			// Queue command, if there's room.
 			// Turn off interrupts while querying or manipulating the queue!
-			//ATOMIC_BLOCK(ATOMIC_FORCEON) {
+			AVR32_ENTER_CRITICAL_REGION( )
 				const uint8_t command_length = from_host.getLength();
 				if (command::getRemainingCapacity() >= command_length) {
 					// Append command to buffer
@@ -134,7 +135,7 @@ bool processCommandPacket(const InPacket& from_host, OutPacket& to_host) {
 				} else {
 					to_host.append8(RC_BUFFER_OVERFLOW);
 				}
-			//}
+			AVR32_LEAVE_CRITICAL_REGION( )
 			return true;
 		}
 	}
@@ -160,7 +161,7 @@ inline void handleGetBufferSize(const InPacket& from_host, OutPacket& to_host) {
 }
 
 inline void handleGetPosition(const InPacket& from_host, OutPacket& to_host) {
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  AVR32_ENTER_CRITICAL_REGION( )
 		const Point p = steppers::getPosition();
 		to_host.append8(RC_OK);
 		to_host.append32(p[0]);
@@ -176,11 +177,11 @@ inline void handleGetPosition(const InPacket& from_host, OutPacket& to_host) {
 			endstop_status |= (si.isAtMaximum()?2:0) | (si.isAtMinimum()?1:0);
 		}
 		to_host.append8(endstop_status);
-	}
+   AVR32_LEAVE_CRITICAL_REGION( )
 }
 
 inline void handleGetPositionExt(const InPacket& from_host, OutPacket& to_host) {
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+  AVR32_ENTER_CRITICAL_REGION( )
 		const Point p = steppers::getPosition();
 		to_host.append8(RC_OK);
 		to_host.append32(p[0]);
@@ -203,7 +204,7 @@ inline void handleGetPositionExt(const InPacket& from_host, OutPacket& to_host) 
 			endstop_status |= (si.isAtMaximum()?2:0) | (si.isAtMinimum()?1:0);
 		}
 		to_host.append16(endstop_status);
-	}
+  AVR32_LEAVE_CRITICAL_REGION( )
 }
 
 inline void handleCaptureToFile(const InPacket& from_host, OutPacket& to_host) {
@@ -337,10 +338,10 @@ inline void handlePause(const InPacket& from_host, OutPacket& to_host) {
 
 inline void handleIsFinished(const InPacket& from_host, OutPacket& to_host) {
 	to_host.append8(RC_OK);
-	ATOMIC_BLOCK(ATOMIC_FORCEON) {
+	AVR32_ENTER_CRITICAL_REGION( )
 		bool done = !steppers::isRunning() && command::isEmpty();
 		to_host.append8(done?1:0);
-	}
+	AVR32_LEAVE_CRITICAL_REGION( )
 }
 	//todo: fix avr32 eeprom write
 inline void handleReadEeprom(const InPacket& from_host, OutPacket& to_host) {
