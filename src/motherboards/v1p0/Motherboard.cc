@@ -31,8 +31,6 @@
 
 
 
-/// Instantiate static motherboard instance
-//Motherboard Motherboard::motherboard;
 
 
 // Osc1 crystal is not mounted by default. Set the following definitions to the

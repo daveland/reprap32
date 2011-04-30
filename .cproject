@@ -160,7 +160,7 @@
 </toolChain>
 </folderInfo>
 <sourceEntries>
-<entry excluding="shared/atomic.hh" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
+<entry excluding="SOFTWARE_FRAMEWORK/ASM/trampoline.x|shared/atomic.hh" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="src"/>
 </sourceEntries>
 </configuration>
 </storageModule>

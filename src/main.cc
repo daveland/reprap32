@@ -45,13 +45,15 @@
 
 void reset(bool hard_reset) {
                 Disable_global_interrupt();
-
+                //Motherboard mb;
 		Motherboard& board = Motherboard::getBoard();
 		sdcard::reset();
 		steppers::abort();
 		command::reset();
 		eeprom::init();
+		//mb.reset();
 		board.reset();
+
 		Enable_global_interrupt();
 
 		// If we've just come from a hard reset, wait for 2.5 seconds before

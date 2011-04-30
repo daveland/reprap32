@@ -71,7 +71,7 @@ private:
 	// Assignment prevention
 	Motherboard& operator= (const Motherboard&);
 
-	static Motherboard motherboard;
+
 public:
 
 	/// Reset the motherboard to its initial state.
