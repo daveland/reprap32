@@ -41,6 +41,9 @@
 #include "EepromMap.hh"
 #include "intc.h"
 
+// nanotrace buffer for storage of debugging trace information
+//  not used by program.. used by IDE trace system
+//char NANOTRACE[1024] __attribute__((used));
 
 
 void reset(bool hard_reset) {

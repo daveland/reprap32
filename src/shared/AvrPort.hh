@@ -31,14 +31,19 @@ extern "C" {
 
 class Pin {
 private:
-     //   static bool gpio_module_initialized ;
+     static bool gpio_module_initialized;
 
 public:
   unsigned int pin_index ;
 	Pin() : pin_index(0) {}
-	Pin( unsigned int pin_index_in) : pin_index(pin_index_in) {}
+	Pin( unsigned int pin_index_in) : pin_index(pin_index_in){}
 	bool isNull() { return (pin_index==0); }
 	void setDirection(bool out) {
+	  if (!gpio_module_initialized)
+	    {
+	    gpio_local_init();
+	    gpio_module_initialized=true;
+	    }
 		if (out==true)
 		  AVR32_GPIO_LOCAL.port[pin_index >> 5].oders = 1 << (pin_index & 0x1F);
 		else
@@ -46,6 +51,11 @@ public:
 	}
 	bool getValue() { return (AVR32_GPIO_LOCAL.port[pin_index >> 5].pvr >> (pin_index & 0x1F)) & 1; }
 	void setValue(bool pin_on) {
+              if (!gpio_module_initialized)
+	              {
+	              gpio_local_init();
+	              gpio_module_initialized=true;
+	              }
 		if (pin_on==true)
 		  AVR32_GPIO_LOCAL.port[pin_index >> 5].ovrs = 1 << (pin_index & 0x1F);
 		else

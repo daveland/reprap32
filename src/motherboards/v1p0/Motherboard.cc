@@ -233,8 +233,8 @@ void Motherboard::reset() {
 		stepper[i].init(i);
 	}
 	// Initialize the host and slave UARTs
-	//UART mbuart=UART::UART(HOST_UART);  // dummy instance to force Creation of static instanses
-	//mbuart.enable(true);
+	UART mbuart=UART::UART(HOST_UART);  // dummy instance to force Creation of static instanses
+	mbuart.enable(true);
 	getHostUART().enable(true);
 	getHostUART().in.reset();
 	getSlaveUART().enable(true);
