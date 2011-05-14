@@ -87,7 +87,7 @@ static void tc0_irq(void) {
 
 // set CPU and peripheral clocks to desired values.
 // this depends of Crystal frequency
-void Motherboard::setClocks() {
+void Motherboard::SetClocks() {
 
 
     // one wait state for Flash memory access
@@ -193,7 +193,12 @@ static void tc1_irq(void) {
 
 /// add steppers to motherboard singleton object
 Motherboard::Motherboard() {
+  // before we set up everything we must set up the CPU
+  // clocks and PBA clocks.   Do this on singleton creation
+  //  BEFORE other subobjects are created and main runs....
+  SetClocks();
 	/// Set up the stepper pins on board creation
+
 #if STEPPER_COUNT > 0
 	stepper[0] = StepperInterface(X_DIR_PIN,X_STEP_PIN,X_ENABLE_PIN,X_MAX_PIN,X_MIN_PIN);
 #endif
@@ -215,7 +220,7 @@ Motherboard::Motherboard() {
 /// This only resets the board, and does not send a reset
 /// to any attached toolheads.
 void Motherboard::reset() {
-  setClocks();
+  SetClocks();
 
   gpio_local_init();
   DEBUG_PIN.setDirection(true);
@@ -380,7 +385,7 @@ void Motherboard::init_interrupts() {
 
 
    // Enable all interrupts.
-       Enable_global_interrupt();
+    //   Enable_global_interrupt();
 
 
    // Start the timer/counters.

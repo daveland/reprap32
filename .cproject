@@ -146,7 +146,6 @@
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/reprap32/src/SOFTWARE_FRAMEWORK/DRIVERS/WDT}&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/reprap32/src/SOFTWARE_FRAMEWORK/UTILS/LIBS/NEWLIB_ADDONS/INCLUDE}&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/reprap32/src/SOFTWARE_FRAMEWORK/UTILS/PREPROCESSOR}&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${workspace_loc:/reprap32/src/SOFTWARE_FRAMEWORK/UTILS/STARTUP_FILES}&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/reprap32/src/SOFTWARE_FRAMEWORK/UTILS}&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/reprap32/src/shared}&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/reprap32/src/motherboards/lib_sd}&quot;"/>

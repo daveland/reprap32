@@ -214,7 +214,7 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
                     usart_init_rs232(HOST_USART, &HOST_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
 	              // print(EXAMPLE_USART, ".: Using interrupts with the USART :.\n\n");
 
-                     //INTC_register_interrupt(&host_usart_int_handler, HOST_USART_IRQ, AVR32_INTC_INT0);
+                     INTC_register_interrupt(&host_usart_int_handler, HOST_USART_IRQ, AVR32_INTC_INT1);
                      // Assign GPIO to USART.
 
                      HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK;
@@ -223,7 +223,7 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 	            gpio_enable_module_pin(AVR32_USART1_TXD_0_0_PIN,AVR32_USART1_TXD_0_0_FUNCTION);
 	            usart_init_rs232(SLAVE_USART, &SLAVE_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
 
-	         //   INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT0);
+	            INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT1);
 		// usart1 is an RS485 port, and requires additional setup.
 		// Tx enable = RS485_DE= PA13, high=Drive enable, Low= Receiver enabled
 		TX_ENABLE_PIN.setDirection(true);

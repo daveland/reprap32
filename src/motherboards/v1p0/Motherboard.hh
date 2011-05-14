@@ -54,7 +54,7 @@ private:
 
   //unsigned int fstate;
 
-
+        //static bool initialized;
 	const static int STEPPERS = STEPPER_COUNT;
 
 	StepperInterface stepper[STEPPERS];
@@ -118,7 +118,7 @@ public:
 	/// Perform the timer interrupt routine.
 	void doInterrupt();
 	// set up pba and pbb clocks
-	void setClocks();
+	void SetClocks();
 };
 
 
