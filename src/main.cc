@@ -75,7 +75,7 @@ void reset(bool hard_reset) {
 
 
 int main() {
-        // this call and builds the motherboard singleton instance
+        // this call builds the motherboard singleton instance
         // and then initializes the steppers
 	steppers::init(Motherboard::getBoard());
 	reset(true);

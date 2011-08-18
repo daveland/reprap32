@@ -99,7 +99,7 @@ UART UART::uart[] = {
 
 volatile uint8_t loopback_bytes = 0;
 
-// Slave uarts have only a single Enable pin.  We are either sending or receiving.
+// Slave uarts have only a single RS422 Driver Enable pin.  We are either sending or receiving.
 // This saves an IO pin for other uses
 inline void listen() {
 	TX_ENABLE_PIN.setValue(false);
@@ -137,9 +137,14 @@ static void host_usart_int_handler(void)
   // interrupt handler is leaved and the interrupt priority level is unmasked by
   // the CPU.
 
-  status=usart_read_char(HOST_USART, &c);
+  // The Interrupt on the USART is NOT RX or TX specific. So we must process both RX char events
+  // and TX events in the same routine.
+
+// see if we have an RX char to process
+  status=usart_read_char(HOST_USART, &c);   // try to read a character
   if (status==USART_SUCCESS)
-    UART::uart[0].in.processByte( c );
+    UART::uart[0].in.processByte( c );   // if a charcter was correctly read, then let the uart object eat it
+
 
   if (status==USART_RX_ERROR)  /// clear the usart error
     {
@@ -147,15 +152,16 @@ static void host_usart_int_handler(void)
     usart_clear_rx_errors(HOST_USART);
     }
 
-
+/// TX service routine
   // Print the next buffered character to USART TX.
 
-  if (UART::uart[0].out.isSending())
-    if (usart_tx_ready(HOST_USART))
-      usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());
 
-  if (!UART::uart[0].out.isSending())
-    HOST_USART->idr = AVR32_USART_IDR_TXRDY_MASK;  // disable TX interrupt
+  if (UART::uart[0].out.isSending())  // if UART object has chars to send
+    if (usart_tx_ready(HOST_USART))    //  and host usart register is empty
+      usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());  // forwar char to uart from UART object
+
+  if (!UART::uart[0].out.isSending())  // see if USART object is done sending for now.
+    HOST_USART->idr = AVR32_USART_IDR_TXRDY_MASK;  // disable TX interrupt  // if we are done sending, stop TX interuupts
 
 }
 
@@ -193,16 +199,21 @@ static void slave_usart_int_handler(void)
      UART::uart[1].in.processByte(c);
     }
   }
+
+  // See if a TX should be done.
   // Print the next buffered character to USART TX.
 
-
-  if (UART::uart[1].out.isSending()) {
+  if (usart_tx_ready(SLAVE_USART)) {   // see if usart hardware is ready for another character
+    if (UART::uart[1].out.isSending()) {  // does USART object have chars to send ?
               loopback_bytes++;
               usart_write_char(SLAVE_USART, UART::uart[1].out.getNextByteToSend());
       } else {
                 listen();
-       }
-}
+      }
+  }
+
+  }
+
 
 // Constructor for UART objects
 // Build them , with full initialization
@@ -233,16 +244,18 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 }
 //TCA1_TC_CHANNEL_PIN
 
-
+// tells the UART object to begin sending charcters in its buffer to the usart.
+//  It clears the interrupt mask for TX interupts and allows them to be serviced.
 /// Subsequent bytes will be triggered by the tx complete interrupts.
-/// Once started this never shuts up!! unless you disable the TX interupt
+/// Once started this never shuts up and keeps interupting until the service routine sees the object has no more to send.
+// Then it sets the interupt mask to avoid unneeded interupts.
 
 void UART::beginSend() {
 	if (!enabled_) { return; }
 	uint8_t send_byte =out.getNextByteToSend();
 	if (index_ == 0) {
 
-	  HOST_USART->ier = AVR32_USART_IER_TXRDY_MASK;  // enable TX interrupt
+	  HOST_USART->ier = AVR32_USART_IER_TXRDY_MASK;  // enable TX interrupt so we can send  the byte
 	  usart_write_char(HOST_USART,send_byte);
 	} else if (index_ == 1) {
 		speak();
