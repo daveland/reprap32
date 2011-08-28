@@ -48,7 +48,8 @@ public:
 #endif
 	}
 	const int32_t& operator[](unsigned int index) const { return coordinates[index]; }
-} __attribute__ ((__packed__));
+};
+// Removed packed   Why did adam do this????  __attribute__ ((__packed__));
 
 
 #endif // TYPES_HH_

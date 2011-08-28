@@ -91,6 +91,17 @@ static const usart_options_t SLAVE_USART_OPTIONS =
 // declare Two Global UART objects and assign them to the class variable array uart[]
 // This runs the constructors and the port initialization
 //
+//  See Motherboar::reset() for an issue and a Kludge fix.
+        // It seems that the static initializer of the uarts below Occurs BEFORE the interrupt
+        // vector table is initialized. so the uart vectors that are written there on static object creation will get overwritten.
+        // by the initalization of the default "unhandled exception" error in each interrupt vector location.
+        //
+        // We must control object creation and initialization and not leave it up to the system.  Since all these
+        // objects have some side effects in hardware, they are order dependent.  And the initialization order
+        // is not specifically defined for us on defautl object creation.  The only guarentee we have is
+        // that an object will be created before it is used the first time.  no order is implied in
+        // that policy..  Or we must move all side effects outside of object creation and initialization
+        // ( kinda defeats the object metaphor here..)
 
 UART UART::uart[] = {
 		UART(HOST_UART),
@@ -156,11 +167,11 @@ static void host_usart_int_handler(void)
   // Print the next buffered character to USART TX.
 
 
-  if (UART::uart[0].out.isSending())  // if UART object has chars to send
+  if (UART::uart[HOST_UART].out.isSending())  // if UART object has chars to send
     if (usart_tx_ready(HOST_USART))    //  and host usart register is empty
       usart_write_char(HOST_USART, UART::uart[0].out.getNextByteToSend());  // forwar char to uart from UART object
 
-  if (!UART::uart[0].out.isSending())  // see if USART object is done sending for now.
+  if (!UART::uart[HOST_UART].out.isSending())  // see if USART object is done sending for now.
     HOST_USART->idr = AVR32_USART_IDR_TXRDY_MASK;  // disable TX interrupt  // if we are done sending, stop TX interuupts
 
 }
@@ -180,7 +191,7 @@ __interrupt
 #endif
 static void slave_usart_int_handler(void)
 {
-  int c;
+  int c,status;
 
   // In the code line below, the interrupt priority level does not need to be
   // explicitly masked as it is already because we are within the interrupt
@@ -191,14 +202,20 @@ static void slave_usart_int_handler(void)
   // the call to usart_write_char will take enough time for this before the
   // interrupt handler is leaved and the interrupt priority level is unmasked by
   // the CPU.
-
-  if (usart_read_char(SLAVE_USART, &c)==USART_SUCCESS){
-     if (loopback_bytes > 0) {
-         loopback_bytes--; // eat the byte... don't process it, its just an echoed character
-     } else {
-     UART::uart[1].in.processByte(c);
+  status=usart_read_char(SLAVE_USART, &c);
+  if (status==USART_SUCCESS){
+       if (loopback_bytes > 0) {
+           loopback_bytes--; // eat the byte... don't process it, its just an echoed character
+       } else {
+         UART::uart[1].in.processByte(c);
     }
   }
+
+  if (status==USART_RX_ERROR)  /// clear the usart error
+     {
+     c=SLAVE_USART->rhr;
+     usart_clear_rx_errors(SLAVE_USART);
+     }
 
   // See if a TX should be done.
   // Print the next buffered character to USART TX.
@@ -211,6 +228,9 @@ static void slave_usart_int_handler(void)
                 listen();
       }
   }
+
+  if (!UART::uart[SLAVE_UART].out.isSending())  // see if USART object is done sending for now.
+      SLAVE_USART->idr = AVR32_USART_IDR_TXRDY_MASK;  // disable TX interrupt  // if we are done sending, stop TX interuupts
 
   }
 
@@ -235,6 +255,9 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 	            usart_init_rs232(SLAVE_USART, &SLAVE_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
 
 	            INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT1);
+
+	            SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK;
+
 		// usart1 is an RS485 port, and requires additional setup.
 		// Tx enable = RS485_DE= PA13, high=Drive enable, Low= Receiver enabled
 		TX_ENABLE_PIN.setDirection(true);
@@ -254,13 +277,17 @@ void UART::beginSend() {
 	if (!enabled_) { return; }
 	uint8_t send_byte =out.getNextByteToSend();
 	if (index_ == 0) {
-
-	  HOST_USART->ier = AVR32_USART_IER_TXRDY_MASK;  // enable TX interrupt so we can send  the byte
+	  // write First character (213 or 0xD5) to TX register.
+	  //  do this so it is sent before we enable the interrupts whcih starts the
+	  // process until the buffer is empty.
 	  usart_write_char(HOST_USART,send_byte);
+	  HOST_USART->ier = AVR32_USART_IER_TXRDY_MASK;  // enable TX interrupt so we can send  the byte
+
 	} else if (index_ == 1) {
 		speak();
 		loopback_bytes = 1;
 		usart_write_char(SLAVE_USART,send_byte);
+		SLAVE_USART->ier = AVR32_USART_IER_TXRDY_MASK;  // enable TX interrupt so we can send  the byte
 	}
 }
 
@@ -270,7 +297,7 @@ void UART::enable(bool enabled) {
 		if (enabled) { HOST_USART->ier = AVR32_USART_IER_RXRDY_MASK; }
 		else { HOST_USART->idr = AVR32_USART_IDR_RXRDY_MASK; }
 	} else if (index_ == 1) {
-		if (enabled) { SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK ; }
+		if (enabled) {SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK ; }
 		else { SLAVE_USART->idr = AVR32_USART_IDR_RXRDY_MASK; }
 	}
 }

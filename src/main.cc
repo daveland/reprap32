@@ -84,7 +84,7 @@ int main() {
 
 	while (1) {
 		// Toolhead interaction thread.
-		//tool::runToolSlice();
+		tool::runToolSlice();
 		// Host interaction thread.
 		runHostSlice();
 		// Command handling thread.

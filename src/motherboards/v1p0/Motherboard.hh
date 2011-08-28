@@ -83,6 +83,7 @@ public:
 	void init_interrupts();
 
 	/// Get the UART that communicates with the host.
+
 	UART& getHostUART() { return UART::getHostUART(); }
 	/// Get the UART that communicates with the toolhead.
 	UART& getSlaveUART() { return UART::getSlaveUART(); }

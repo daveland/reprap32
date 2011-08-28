@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#define VERSION 240
+#define VERSION 3200
 
 #ifndef VERSION
 #error "Version not defined! Please define the version number for this build."
@@ -29,7 +29,7 @@ const uint16_t firmware_version = VERSION;
 #endif
 
 #ifndef BUILD_NAME
-const char* const build_name = "Cupcake";
+const char* const build_name = "RepRap32";
 #else
 const char* const build_name = BUILD_NAME;
 #endif

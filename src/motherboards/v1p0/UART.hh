@@ -30,8 +30,8 @@
  */
 
 enum uart_t {
-        HOST_UART =1,
-        SLAVE_UART =0
+        HOST_UART =0,
+        SLAVE_UART =1
 };
 
 class UART {

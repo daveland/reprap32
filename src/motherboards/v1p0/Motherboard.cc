@@ -89,6 +89,7 @@ static void tc0_irq(void) {
 // this depends of Crystal frequency
 void Motherboard::SetClocks() {
 
+  gpio_local_init();
 
     // one wait state for Flash memory access
     flashc_set_wait_state(1);
@@ -220,7 +221,8 @@ Motherboard::Motherboard() {
 /// This only resets the board, and does not send a reset
 /// to any attached toolheads.
 void Motherboard::reset() {
-  SetClocks();
+  gpio_local_init();
+  //SetClocks();
 
   gpio_local_init();
   DEBUG_PIN.setDirection(true);
@@ -237,9 +239,23 @@ void Motherboard::reset() {
 	for (int i = 0; i < STEPPER_COUNT; i++) {
 		stepper[i].init(i);
 	}
-	// Initialize the host and slave UARTs
+	// Initialize the host and slave UARTs  AGAIN!!! by creating a local UART instance and initializing it.
+	//  It gets destroyed once we leave this routine, and is never used again... But it has a side effect.
+
+	// This is a Kludge.  It just forces the update of the _int_handler_table for the usart interupt
+	// vectors.  It seems that the static initializer of the uarts ( in UART.CC) Occurs BEFORE the interrupt
+	// vector table is initialized. so the uart vectors that are written there on static object creation will get overwritten.
+	// by the initalization of the default "unhandel exception" error in each interrupt vector location.
+	//
+	//
+
 	UART mbuart=UART::UART(HOST_UART);  // dummy instance to force Creation of static instanses
 	mbuart.enable(true);
+
+	UART mbuart_slave=UART::UART(SLAVE_UART);  // dummy instance to force Creation of static instanses
+	mbuart_slave.enable(true);
+
+
 	getHostUART().enable(true);
 	getHostUART().in.reset();
 	getSlaveUART().enable(true);
