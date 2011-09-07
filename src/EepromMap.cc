@@ -44,6 +44,7 @@ void init() {
 uint8_t getEeprom8(const uint16_t location, const uint8_t default_value) {
 	uint8_t data;
 	//eeprom_read_block(&data,(const uint8_t*)location,1);
+	data=USERPAGE[location];   // access user page data at location
 	if (data == 0xff) data = default_value;
 	return data;
 }
@@ -51,6 +52,7 @@ uint8_t getEeprom8(const uint16_t location, const uint8_t default_value) {
 uint16_t getEeprom16(const uint16_t location, const uint16_t default_value) {
 	uint16_t data;
 	//eeprom_read_block(&data,(const uint8_t*)location,2);
+	data=USERPAGE[location];   // access user page data at location
 	if (data == 0xffff) data = default_value;
 	return data;
 }

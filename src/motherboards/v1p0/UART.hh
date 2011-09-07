@@ -43,6 +43,7 @@ public:
 	InPacket in;
 	OutPacket out;
 	void beginSend();
+	void test();
 	void enable(bool enabled);
 	static UART& getHostUART() { return uart[HOST_UART]; }
 	static UART& getSlaveUART() { return uart[SLAVE_UART]; }

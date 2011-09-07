@@ -224,6 +224,9 @@ void usart_clear_rx_errors(volatile avr32_usart_t *usart);
  */
 extern void usart_reset(volatile avr32_usart_t *usart);
 
+
+extern void usart_txrdy_idr_false(volatile avr32_usart_t *usart);
+
 /*! \brief Sets up the USART to use the standard RS232 protocol.
  *
  * \param usart   Base address of the USART instance.

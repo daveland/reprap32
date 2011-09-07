@@ -76,17 +76,25 @@ public:
 	}
 
 	void doInterrupt(const int32_t intervals) {
-		counter += delta;
+	int x,y;
+	  counter += delta;
 		if (counter >= 0) {
 			interface->setDirection(direction);
 			counter -= intervals;
 			if (direction) {
 				if (!interface->isAtMaximum()) interface->step(true);
 				position++;
+
+
 			} else {
 				if (!interface->isAtMinimum()) interface->step(true);
 				position--;
 			}
+			// hold pulse for 5us = 2 overhead + delay 3us below.
+			x=0;
+			for(y=0;y<10;y++)
+			  x=x+10;
+
 			interface->step(false);
 		}
 	}

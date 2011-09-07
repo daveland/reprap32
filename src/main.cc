@@ -82,9 +82,14 @@ int main() {
 	// Enable all interrupts.
 	Enable_global_interrupt();
 
+	//while (1) {
+	//  Motherboard& board = Motherboard::getBoard();
+	//  board.getSlaveUART().test();
+
+	//}
 	while (1) {
 		// Toolhead interaction thread.
-		tool::runToolSlice();
+              tool::runToolSlice();
 		// Host interaction thread.
 		runHostSlice();
 		// Command handling thread.

@@ -543,6 +543,18 @@ int usart_init_rs485(volatile avr32_usart_t *usart, const usart_options_t *opt, 
 }
 
 
+void usart_txrdy_idr_false(volatile avr32_usart_t *usart)
+{
+
+
+  // Set idr false
+  usart->idr = AVR32_USART_IDR_TXRDY_MASK;
+
+
+}
+
+
+
 int usart_init_IrDA(volatile avr32_usart_t *usart, const usart_options_t *opt,
                     long pba_hz, unsigned char irda_filter)
 {

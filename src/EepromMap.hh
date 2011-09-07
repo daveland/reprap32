@@ -20,8 +20,21 @@
 #define EEPROMMAP_HH_
 
 #include <stdint.h>
+#include "flashc.h"
 
+// User the user page in the AT32UC3B0256 as the Default EEPROM storage space
+// It is not a truly Byte read/writable space so we must improvise
+// We can read it like a byte oriented space, But we must only write it
+// as an entire page word oriented space.
+// When writes are requested we read out the entire buffer, modify it and
+// then erase the page and write it back.  Note that if we loose power
+// during this read-modify-write operation the page will be corrupted.
+//
+//  Also location 0x808001FC -- is reserved for the boot loader config We cannot use it.
+//
 namespace eeprom {
+// Top of userpage address space  512 bytes long
+#define USERPAGE AVR32_FLASHC_USER_PAGE
 
 const static uint16_t EEPROM_SIZE				= 0x0200;
 

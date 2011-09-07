@@ -204,33 +204,52 @@ static void slave_usart_int_handler(void)
   // the CPU.
   status=usart_read_char(SLAVE_USART, &c);
   if (status==USART_SUCCESS){
-       if (loopback_bytes > 0) {
-           loopback_bytes--; // eat the byte... don't process it, its just an echoed character
-       } else {
-         UART::uart[1].in.processByte(c);
-    }
+       //if (loopback_bytes > 0) {
+       //    loopback_bytes--; // eat the byte... don't process it, its just an echoed character
+       //} else {
+         UART::uart[SLAVE_UART].in.processByte(c);
+    //}
   }
 
   if (status==USART_RX_ERROR)  /// clear the usart error
      {
+    //if (loopback_bytes > 0)
+    //   loopback_bytes--; // eat the byte... don't process it, its just an echoed character
+
      c=SLAVE_USART->rhr;
      usart_clear_rx_errors(SLAVE_USART);
      }
+
+
 
   // See if a TX should be done.
   // Print the next buffered character to USART TX.
 
   if (usart_tx_ready(SLAVE_USART)) {   // see if usart hardware is ready for another character
-    if (UART::uart[1].out.isSending()) {  // does USART object have chars to send ?
-              loopback_bytes++;
-              usart_write_char(SLAVE_USART, UART::uart[1].out.getNextByteToSend());
-      } else {
-                listen();
-      }
+
+     if ( UART::uart[SLAVE_UART].out.isFinished()){ // if we are here because of a TXEMPTY interrupt
+                  SLAVE_USART->idr = AVR32_USART_IDR_TXEMPTY_MASK;  // Now that  last character has left the shift register
+                  listen();                                               // it is safe to go to listen mode.
+          }
+
+
+      if (!UART::uart[SLAVE_UART].out.isSending()){  // see if  last character has cleared the THR and is being shifted out.
+                                                                  // transmit holding register... but are we still shifting out of the shift reg ???
+            SLAVE_USART->idr = AVR32_USART_IDR_TXEMPTY_MASK;  // disable TX THR Ready interrupt  // if we are done sending new chars
+           // usart_txrdy_idr_false(SLAVE_USART);
+           // SLAVE_USART->ier = AVR32_USART_IER_TXEMPTY_MASK;  // enable TX EMPTY interrupt   so we can get one more interuptu to listen after last character clears the TX shift register
+        }
+
+
+
+
+      if (UART::uart[SLAVE_UART].out.isSending()) {  // does USART object have chars to send ?
+            loopback_bytes++;
+            usart_write_char(SLAVE_USART, UART::uart[1].out.getNextByteToSend());
+
+     }
   }
 
-  if (!UART::uart[SLAVE_UART].out.isSending())  // see if USART object is done sending for now.
-      SLAVE_USART->idr = AVR32_USART_IDR_TXRDY_MASK;  // disable TX interrupt  // if we are done sending, stop TX interuupts
 
   }
 
@@ -254,9 +273,16 @@ UART::UART(uart_t index) : index_(index), enabled_(false) {
 	            gpio_enable_module_pin(AVR32_USART1_TXD_0_0_PIN,AVR32_USART1_TXD_0_0_FUNCTION);
 	            usart_init_rs232(SLAVE_USART, &SLAVE_USART_OPTIONS, REPRAP32_PBACLK_FREQ_HZ);
 
+	            // Set RS485 mode.
+	            //SLAVE_USART->mr = (SLAVE_USART->mr & ~AVR32_USART_MR_MODE_MASK) |
+	            //             AVR32_USART_MR_MODE_RS485 << AVR32_USART_MR_MODE_OFFSET;
+
+	            //
+	            //SLAVE_USART->ttgr=15;
+
 	            INTC_register_interrupt(&slave_usart_int_handler, SLAVE_USART_IRQ, AVR32_INTC_INT1);
 
-	            SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXRDY_MASK;
+	            SLAVE_USART->ier = AVR32_USART_IER_RXRDY_MASK | AVR32_USART_IER_TXEMPTY_MASK;
 
 		// usart1 is an RS485 port, and requires additional setup.
 		// Tx enable = RS485_DE= PA13, high=Drive enable, Low= Receiver enabled
@@ -285,12 +311,16 @@ void UART::beginSend() {
 
 	} else if (index_ == 1) {
 		speak();
-		loopback_bytes = 1;
+		loopback_bytes = 0;
 		usart_write_char(SLAVE_USART,send_byte);
-		SLAVE_USART->ier = AVR32_USART_IER_TXRDY_MASK;  // enable TX interrupt so we can send  the byte
+		SLAVE_USART->ier = AVR32_USART_IER_TXEMPTY_MASK;  // enable TX interrupt so we can send  the byte
 	}
 }
 
+void UART::test(){
+  usart_write_char(SLAVE_USART,'x');
+
+}
 void UART::enable(bool enabled) {
 	enabled_ = enabled;
 	if (index_ == 0) {
