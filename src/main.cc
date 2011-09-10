@@ -48,13 +48,13 @@
 
 void reset(bool hard_reset) {
                 Disable_global_interrupt();
-                //Motherboard mb;
+
 		Motherboard& board = Motherboard::getBoard();
 		sdcard::reset();
 		steppers::abort();
 		command::reset();
-		eeprom::init();
-		//mb.reset();
+		eeprom::init();  // read the User Flash page and emulate a true EEPROM
+
 		board.reset();
 
 		Enable_global_interrupt();

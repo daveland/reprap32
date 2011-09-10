@@ -34,7 +34,12 @@
 //
 namespace eeprom {
 // Top of userpage address space  512 bytes long
-#define USERPAGE AVR32_FLASHC_USER_PAGE
+//#define USERPAGE AVR32_FLASHC_USER_PAGE
+#define USERPAGE ((volatile uint8_t *)AVR32_FLASHC_USER_PAGE_ADDRESS)
+ // ram buffer for image of eeprom data.
+  // preserved inside eeprom namespace.
+#define EEPROM_BUFFERSIZE 512
+static uint8_t buffer[EEPROM_BUFFERSIZE] ;
 
 const static uint16_t EEPROM_SIZE				= 0x0200;
 
@@ -59,6 +64,24 @@ const static uint16_t ENDSTOP_INVERSION			= 0x0003;
 const static uint16_t MACHINE_NAME				= 0x0020;
 
 void init();
+
+// copy the Userpage into ram buffer shadow space
+// When modifications are needed we modify the buffer and write the
+// entire page back.
+void copy_eeprom_into_buffer();
+
+// copy buffer back into userpage EERPOM Space.
+void copy_buffer_into_eeprom();
+
+
+/// modify a byte in the buffer
+/// Prevent writing to locatio 1fc,1fd,1fe,1ff to protect bootloader
+/// config word.  The system will be bricked if we change that word
+// and the bootloader does not jumo to our applicaiton.
+void write_byte_into_buffer(uint16_t loc, uint8_t value);
+
+void read_block(uint8_t  *data, uint16_t offset,uint8_t length);
+void write_block(uint8_t  *data, uint16_t offset,uint8_t length);
 
 uint8_t getEeprom8(const uint16_t location, const uint8_t default_value);
 uint16_t getEeprom16(const uint16_t location, const uint16_t default_value);

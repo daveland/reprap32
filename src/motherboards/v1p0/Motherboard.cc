@@ -268,6 +268,14 @@ void Motherboard::reset() {
 //  Set up the interupts on TC1 and TC2 so that we get
 // proper interrupt timings
 
+// System Interrupt Plan
+//   Interrupt source                       IRQ Line used
+//     ------------UNused--------------        INT3 (Highest)
+// TC0 is assigned to  64us stepper interrupt  INT2 (next to highest)
+// USART1  Slave USART  ( initalized in UART.cc)  INT1 (Medium level)
+// USART2  HOST USART  ( initialized in UART.CC)  INT1 (Medium level)
+// TC1 is assigned to run the LED timer interrupt  INT0 (lowest level)
+
 void Motherboard::init_interrupts() {
 // Disable all interrupts.
  Disable_global_interrupt();
@@ -303,7 +311,7 @@ void Motherboard::init_interrupts() {
      tc0_interrupt_settings.lovrs= 0;
      tc0_interrupt_settings.covfs= 0;
 
-     // TC1 runs the LED timer interuupt at 16.38ms per interrupt
+     // TC1 runs the LED timer interrupt at 16.38ms per interrupt
      // Set the interrupt mode on Tc to enable RC compare interrupts
      //  TC0 counts up to the RC value and then is reset to 0
      //  the compare match with RC causes the counter to REset to 0 and the interrupt.
@@ -396,17 +404,9 @@ void Motherboard::init_interrupts() {
    tc_write_rc(tc, 1, TIMER1_RC_COUNTS);     // Set RC value. REset counter here  16.3ms
 
 
-
-
-
-
-   // Enable all interrupts.
-    //   Enable_global_interrupt();
-
-
    // Start the timer/counters.
-   tc_start(tc,0);
-   tc_start(tc,1);
+   tc_start(tc,0);  // TC0 64us stepper interrupt  INT2 (next to highest)
+   tc_start(tc,1);  // TC1 runs the LED timer interrupt  INT0 (lowest level)
 
 }
 

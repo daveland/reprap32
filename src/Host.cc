@@ -24,7 +24,7 @@
 #include "Timeout.hh"
 #include "Version.hh"
 #include "atomic.hh"
-//#include <avr/eeprom.h>
+#include "EepromMap.hh"
 #include "Main.hh"
 #include "Errors.hh"
 #include "SDCard.hh"
@@ -343,29 +343,41 @@ inline void handleIsFinished(const InPacket& from_host, OutPacket& to_host) {
 		to_host.append8(done?1:0);
 	AVR32_LEAVE_CRITICAL_REGION( )
 }
-	//todo: fix avr32 eeprom write
+	// Read for EEPROM the number of bytes from the location specified
+        // by the host.
 inline void handleReadEeprom(const InPacket& from_host, OutPacket& to_host) {
 	uint16_t offset = from_host.read16(1);
 	uint8_t length = from_host.read8(3);
 	uint8_t data[16];
-	//eeprom_read_block(data, (const void*) offset, length);
-	to_host.append8(RC_OK);
-	for (int i = 0; i < length; i++) {
-		to_host.append8(data[i]);
-	}
+	if (length < 16){  // don't allow overwrite of local array.
+                  eeprom::read_block(data,  offset, length);
+	          to_host.append8(RC_OK);
+	          for (int i = 0; i < length; i++) {
+	                  to_host.append8(data[i]);
+	          }
+
+	}else { // we could not write this because the host sent too many characters
+              to_host.append8(RC_PACKET_TOO_BIG);
+              to_host.append8(length);
+        }
 }
-	//todo: fix avr32 eeprom write
+	// write the host packet contents into eeprom at the specified address
 inline void handleWriteEeprom(const InPacket& from_host, OutPacket& to_host) {
 	uint16_t offset = from_host.read16(1);
 	uint8_t length = from_host.read8(3);
 	uint8_t data[16];
-	//eeprom_read_block(data, (const void*) offset, length);
-	for (int i = 0; i < length; i++) {
+	if (length<16){  // protect data array length.
+            //eeprom_read_block(data, (const void*) offset, length);
+            for (int i = 0; i < length; i++) {
 		data[i] = from_host.read8(i + 4);
+              }
+            eeprom::write_block(data, offset, length);
+            to_host.append8(RC_OK);
+            to_host.append8(length);
+	} else { // we could not write this because the host sent too many characters
+          to_host.append8(RC_PACKET_TOO_BIG);
+	   to_host.append8(length);
 	}
-	//eeprom_write_block(data, (void*) offset, length);
-	to_host.append8(RC_OK);
-	to_host.append8(length);
 }
 
 enum { // bit assignments
