@@ -348,8 +348,8 @@ inline void handleIsFinished(const InPacket& from_host, OutPacket& to_host) {
 inline void handleReadEeprom(const InPacket& from_host, OutPacket& to_host) {
 	uint16_t offset = from_host.read16(1);
 	uint8_t length = from_host.read8(3);
-	uint8_t data[16];
-	if (length < 16){  // don't allow overwrite of local array.
+	uint8_t data[32];
+	if (length < 32){  // don't allow overwrite of local array.
                   eeprom::read_block(data,  offset, length);
 	          to_host.append8(RC_OK);
 	          for (int i = 0; i < length; i++) {
@@ -365,13 +365,14 @@ inline void handleReadEeprom(const InPacket& from_host, OutPacket& to_host) {
 inline void handleWriteEeprom(const InPacket& from_host, OutPacket& to_host) {
 	uint16_t offset = from_host.read16(1);
 	uint8_t length = from_host.read8(3);
-	uint8_t data[16];
-	if (length<16){  // protect data array length.
+	uint8_t data[32];
+	if (length<32){  // protect data array length.
             //eeprom_read_block(data, (const void*) offset, length);
             for (int i = 0; i < length; i++) {
 		data[i] = from_host.read8(i + 4);
               }
             eeprom::write_block(data, offset, length);
+            eeprom::copy_buffer_into_eeprom();  // actually commit the buffer bytes to eeprom
             to_host.append8(RC_OK);
             to_host.append8(length);
 	} else { // we could not write this because the host sent too many characters

@@ -72,8 +72,12 @@ void init() {
 	// Write version
 	version[0] = firmware_version % 100;
 	version[1] = firmware_version / 100;
-	eeprom::write_byte_into_buffer(eeprom::VERSION_LOW,2);
+	eeprom::write_byte_into_buffer(eeprom::VERSION_LOW,version[0]);
+	eeprom::write_byte_into_buffer(eeprom::VERSION_HIGH,version[1]);
 
+	copy_buffer_into_eeprom();
+
+	eeprom::copy_eeprom_into_buffer();
 
 }
 
