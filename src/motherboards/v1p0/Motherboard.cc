@@ -79,10 +79,13 @@ __interrupt
 
 static void tc0_irq(void) {
   int tc0_status;
-    // Read interrupt stauts register to clear interrupt from TC1
+  B_STEP_PIN.setValue(true);   // debug TC0 interupt duty cycle
+
+    // Read interrupt stauts register to clear interrupt from TC0
     // else it will keep on nterrupting forever...
        tc0_status= tc_read_sr(tc,0);
         Motherboard::getBoard().doInterrupt();
+  B_STEP_PIN.setValue(false);
 }
 
 // set CPU and peripheral clocks to desired values.

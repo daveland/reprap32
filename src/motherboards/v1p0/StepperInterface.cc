@@ -63,6 +63,8 @@ void StepperInterface::init(uint8_t idx) {
 	// always register as high (pulled up).
 	invert_endstops = !endstops_present || ((endstops_invert & (1<<idx)) != 0);
 	invert_axis = (axes_invert & (1<<idx)) != 0;
+
+	// always apply weak pullups
 	// pull pins up to avoid triggering when using inverted endstops
 	if (!max_pin.isNull()) {
 		max_pin.setDirection(false);
