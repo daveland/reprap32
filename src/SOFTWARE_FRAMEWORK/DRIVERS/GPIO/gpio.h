@@ -98,7 +98,7 @@ typedef struct gpiopins
  *
  * \return \ref GPIO_SUCCESS or \ref GPIO_INVALID_ARGUMENT.
  */
-//extern int gpio_enable_module(const gpio_map_t gpiomap, unsigned int size);
+extern int gpio_enable_module(const gpio_map_t gpiomap, unsigned int size);
 
 /*! \brief Enables a specific module mode for a pin.
  *

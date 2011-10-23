@@ -25,18 +25,60 @@
 #include "../../Command.hh"
 
 // AVR32 software Framework includes
-#include "intc.h"
+//#include "intc.h"
 #include "pm.h"
 #include "flashc.h"
 
+//_____  I N C L U D E S ___________________________________________________
+
+#ifndef FREERTOS_USED
+#if __GNUC__
+#include "nlao_cpu.h"
+#include "nlao_usart.h"
+#endif
+#else
+#include <stdio.h>
+#endif
+#include "compiler.h"
+#include "board.h"
+#include "print_funcs.h"
+#include "intc.h"
+#include "power_clocks_lib.h"
+//#include "cdc_example.h"
+#ifdef FREERTOS_USED
+#include "FreeRTOS.h"
+#include "task.h"
+#endif
+#include "conf_usb.h"
+#include "usb_task.h"
+#if USB_DEVICE_FEATURE == ENABLED
+#include "device_cdc_task.h"
+#endif
+#if USB_HOST_FEATURE == ENABLED
+#include "host_cdc_task.h"
+#endif
+#include <stdio.h>
+
+
+//_____ M A C R O S ________________________________________________________
+
+
+//_____ D E F I N I T I O N S ______________________________________________
+
+/*! \name System Clock Frequencies
+ */
+//! @{
+pcl_freq_param_t pcl_freq_param;
+
+//! @}
 
 
 
 
 // Osc1 crystal is not mounted by default. Set the following definitions to the
 // appropriate values if a custom Osc1 crystal is mounted on your board.
-#define FOSC0           12000000                              //!< Osc1 frequency: Hz.
-#define OSC0_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
+//#define FOSC0           12000000                              //!< Osc1 frequency: Hz.
+//#define OSC0_STARTUP    AVR32_PM_OSCCTRL1_STARTUP_2048_RCOSC  //!< Osc1 startup time: RCOsc periods.
 
 // motherboard Tick timer ( determines INTERVAL_IN_MICROSECONDS )
 // this timer overflows once every INTERVAL_IN_MICROSECONDS
@@ -86,6 +128,81 @@ static void tc0_irq(void) {
        tc0_status= tc_read_sr(tc,0);
         Motherboard::getBoard().doInterrupt();
   B_STEP_PIN.setValue(false);
+}
+
+// setup USB clock and initialize USB hardware
+// Init the debug usat
+void Motherboard::SetUpUSB() {
+// Configure system clocks.
+
+      pcl_freq_param.cpu_f        = APPLI_CPU_SPEED;
+      pcl_freq_param.pba_f        = APPLI_PBA_SPEED;
+      pcl_freq_param.osc0_f       = FOSC0;
+      pcl_freq_param.osc0_startup = OSC0_STARTUP;
+
+ if (pcl_configure_clocks(&pcl_freq_param) != PASS)
+   return;
+
+ // Initialize usart comm
+ init_dbg_rs232(pcl_freq_param.pba_f);
+
+#ifndef FREERTOS_USED
+# if __GNUC__
+ // Give the used CPU clock frequency to Newlib, so it can work properly.
+ set_cpu_hz(pcl_freq_param.pba_f);
+# endif
+#endif
+
+ // Initialize USB clock.
+ pcl_configure_usb_clock();
+
+ // Initialize USB task
+ usb_task_init();
+
+ // Display a welcome banner on USART
+  printf("                                                       ......       ......     \r\n");
+  printf("       IIIIII  IIIII        IIII   IIIIIIIIIII      IIIIIIIIIII. .IIIIIIIIII.  \r\n");
+  printf("      IIIIIII   IIIII      IIIII  IIIIIIIIIIIII     IIIIIIIIIIII..IIIIIIIIIII. \r\n");
+  printf("     IIIIIIIII  IIIII     IIIII   IIIII   IIIII     I.      IIIII.:.     IIIII \r\n");
+  printf("     IIII IIIII  IIIII    IIII   IIIII    IIIII            .IIII.        IIIII \r\n");
+  printf("    IIIII  IIII   IIII   IIIII  IIIIIIIIIIIIII         IIIIIIII          IIII. \r\n");
+  printf("    IIII   IIIII  IIIII IIIII   IIIIIIIIIIIII          IIIIIIII.       .IIII:  \r\n");
+  printf("   IIIII    IIIII  IIIIIIIII   IIIIIIIIIII                 .IIIII     IIIII.   \r\n");
+  printf("  IIIIIIIIIIIIIII   IIIIIIII   IIIII IIIII                  .IIII   .IIII:     \r\n");
+  printf("  IIIIIIIIIIIIIIII  IIIIIII   IIIII   IIII         II:.    .IIIII .IIIII.      \r\n");
+  printf(" IIIII        IIIII  IIIIII  IIIII    IIIII        IIIIIIIIIIIII.IIIIIIIIIIIIII\r\n");
+  printf(" IIIII        IIIII  IIIII   IIIII    IIIII        :IIIIIIIIII.  IIIIIIIIIIIIII\r\n");
+  printf("                      III                                                      \r\n");
+  printf("                       II                                                      \r\n");
+
+
+#if USB_DEVICE_FEATURE == ENABLED
+  // Initialize device CDC USB task
+  device_cdc_task_init();
+#endif
+#if USB_HOST_FEATURE == ENABLED
+  // Initialize host CDC USB task
+  host_cdc_task_init();
+#endif
+
+#ifdef FREERTOS_USED
+  // Start OS scheduler
+  vTaskStartScheduler();
+  portDBG_TRACE("FreeRTOS returned.");
+  return 42;
+#else
+  // No OS here. Need to call each task in round-robin mode.
+  while (TRUE)
+  {
+    usb_task();
+  #if USB_DEVICE_FEATURE == ENABLED
+    device_cdc_task();
+  #endif
+  #if USB_HOST_FEATURE == ENABLED
+    host_cdc_task();
+  #endif
+  }
+#endif  // FREERTOS_USED
 }
 
 // set CPU and peripheral clocks to desired values.

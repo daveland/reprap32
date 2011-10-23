@@ -80,6 +80,8 @@
   #include "EVK1100/evk1100.h"
 #elif BOARD == EVK1101
   #include "EVK1101/evk1101.h"
+#elif BOARD == REPRAP32
+  #include "EVK1101/evk1101.h"
 #elif BOARD == UC3C_EK
   #include "UC3C_EK/uc3c_ek.h"
 #elif BOARD == EVK1104

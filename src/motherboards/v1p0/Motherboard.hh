@@ -44,6 +44,10 @@
 #include  "tc.h"
 #include "intc.h"
 
+//_____ D E F I N I T I O N S ______________________________________________
+
+#define APPLI_CPU_SPEED   60000000
+#define APPLI_PBA_SPEED   60000000
 
 
 
@@ -120,6 +124,10 @@ public:
 	void doInterrupt();
 	// set up pba and pbb clocks
 	void SetClocks();
+
+	// setup USB clock and initialize USB hardware
+	void SetUpUSB();
+
 };
 
 
