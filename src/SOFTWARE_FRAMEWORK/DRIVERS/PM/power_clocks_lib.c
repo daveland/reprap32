@@ -47,9 +47,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
  *
  */
+
+#include "pm.h"
 #include "power_clocks_lib.h"
-
-
 //! Device-specific data
 #if UC3L
 static long int pcl_configure_clocks_uc3l(pcl_freq_param_t *param); // FORWARD declaration
@@ -63,6 +63,7 @@ long int pcl_configure_clocks(pcl_freq_param_t *param)
 {
 #ifndef AVR32_PM_VERSION_RESETVALUE
   // Implementation for UC3A, UC3A3, UC3B parts.
+
   return(pm_configure_clocks(param));
 #else
   #ifdef AVR32_PM_410_H_INCLUDED

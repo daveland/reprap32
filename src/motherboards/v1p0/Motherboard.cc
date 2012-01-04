@@ -29,6 +29,7 @@
 #include "pm.h"
 #include "flashc.h"
 
+
 //_____  I N C L U D E S ___________________________________________________
 
 #ifndef FREERTOS_USED
@@ -146,6 +147,9 @@ void Motherboard::SetUpUSB() {
  // Initialize usart comm
  init_dbg_rs232(pcl_freq_param.pba_f);
 
+ // Initialize the USART used for the debug trace with the configured parameters.
+   set_usart_base( ( void * ) DBG_USART );
+
 #ifndef FREERTOS_USED
 # if __GNUC__
  // Give the used CPU clock frequency to Newlib, so it can work properly.
@@ -191,16 +195,12 @@ void Motherboard::SetUpUSB() {
   portDBG_TRACE("FreeRTOS returned.");
   return 42;
 #else
-  // No OS here. Need to call each task in round-robin mode.
-  while (TRUE)
-  {
-    usb_task();
-  #if USB_DEVICE_FEATURE == ENABLED
-    device_cdc_task();
-  #endif
-  #if USB_HOST_FEATURE == ENABLED
-    host_cdc_task();
-  #endif
+  while (1) {
+            usb_task();
+
+          #if USB_DEVICE_FEATURE == ENABLED
+          device_cdc_task();
+          #endif
   }
 #endif  // FREERTOS_USED
 }
@@ -318,7 +318,13 @@ Motherboard::Motherboard() {
   // clocks and PBA clocks.   Do this on singleton creation
   //  BEFORE other subobjects are created and main runs....
   SetClocks();
+
+  //init_interrupts();
 	/// Set up the stepper pins on board creation
+
+  //Enable_global_interrupt();
+
+  //SetUpUSB();
 
 #if STEPPER_COUNT > 0
 	stepper[0] = StepperInterface(X_DIR_PIN,X_STEP_PIN,X_ENABLE_PIN,X_MAX_PIN,X_MIN_PIN);
@@ -346,6 +352,14 @@ void Motherboard::reset() {
 
   gpio_local_init();
   DEBUG_PIN.setDirection(true);
+
+  // Disable all interrupts.
+   Disable_global_interrupt();
+
+  INTC_init_interrupts();
+
+  SetUpUSB();
+
   init_interrupts();
 
 	indicateError(0); // turn off blinker
@@ -413,7 +427,7 @@ void Motherboard::init_interrupts() {
 
  // The INTC driver has to be used only for GNU GCC for AVR32.
  // Initialize interrupt vectors.
- INTC_init_interrupts();
+ //INTC_init_interrupts();
 
 
 

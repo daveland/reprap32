@@ -355,8 +355,7 @@ void usb_get_descriptor(void)
     }
 #endif
     if( 0!= data_to_transfer ) {
-       data_to_transfer = usb_write_ep_txpacket(EP_CONTROL, pbuffer,
-                                                data_to_transfer, &pbuffer);
+      // data_to_transfer = usb_write_ep_txpacket(EP_CONTROL, pbuffer,data_to_transfer, &pbuffer);
     }
     if (Is_usb_nak_out(EP_CONTROL))
       break;

@@ -40,7 +40,11 @@
 #include "SDCard.hh"
 #include "EepromMap.hh"
 #include "intc.h"
-
+#include "conf_usb.h"
+#include "usb_task.h"
+#if USB_DEVICE_FEATURE == ENABLED
+#include "device_cdc_task.h"
+#endif
 // nanotrace buffer for storage of debugging trace information
 //  not used by program.. used by IDE trace system
 //char NANOTRACE[1024] __attribute__((used));
@@ -88,7 +92,13 @@ int main() {
 
 	//}
 	while (1) {
-		// Toolhead interaction thread.
+	  //usb_task();
+
+        //#if USB_DEVICE_FEATURE == ENABLED
+        //device_cdc_task();
+        //#endif
+
+	  // Toolhead interaction thread.
               tool::runToolSlice();
 		// Host interaction thread.
 		runHostSlice();
